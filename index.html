@@ -883,7 +883,7 @@ const KEY_MAP = {
   "Enter": ACT.ACTION, " ": ACT.ACTION, "5": ACT.ACTION,
   "ArrowUp": ACT.UP, "ArrowDown": ACT.DOWN, "ArrowLeft": ACT.LEFT, "ArrowRight": ACT.RIGHT,
   "2": ACT.UP, "8": ACT.DOWN, "4": ACT.LEFT, "6": ACT.RIGHT,
-  "Escape": ACT.BACK, "Backspace": ACT.BACK,
+  "Escape": ACT.PAUSE, "Backspace": ACT.BACK,
   "p": ACT.PAUSE, "P": ACT.PAUSE,
 };
 
@@ -910,8 +910,8 @@ class InputManager {
     });
     canvas.addEventListener("pointerdown", (e) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      const scaleX = 240 / rect.width;
+      const scaleY = 320 / rect.height;
       this.pointerX = (e.clientX - rect.left) * scaleX;
       this.pointerY = (e.clientY - rect.top) * scaleY;
       this.pointerClicked = true;
@@ -1104,7 +1104,7 @@ class StateMachine {
         // posa del lanciatore (d == 1: ce l'ha), non dal centro tile.
         const D_THROWER = 1;
         // v0y = CLASSE DEL LANCIATORE (`e[d].c`), non tipo blocco. [LETTO j.p() 108-159]
-        g.stone.launch(w.handsX(g.ctx.canvas.width, D_THROWER),
+        g.stone.launch(w.handsX(240, D_THROWER),
                        w.handsWorldY(D_THROWER) - g.cameraY,
                        w.swingVel(), w.amp, g.chain.thrower().cls);
         // f251m[8]++ dopo il lancio riuscito: da qui in poi ACT.ACTION prende il ramo
@@ -1264,7 +1264,7 @@ class StateMachine {
       g.tickCombo(dt);
     }
     // Sistema 13: le particelle vivono di vita propria, indipendenti dallo stato attivo.
-    g.particles.update(dt, inPlay ? g.envEvent : null, g.ctx.canvas.width, g.ctx.canvas.height);
+    g.particles.update(dt, inPlay ? g.envEvent : null, 240, 320);
     if (g.banner && g.banner.timer > 0) {
       g.banner.timer = Math.max(0, g.banner.timer - dt);
     }
@@ -1275,6 +1275,22 @@ class StateMachine {
       g.chain.update(dt);
       g.tickClimbClock(dt);   // f251m[24]: cronometro della scalata [LETTO j.class a(int)]
       g.tickEnvironmentalEvents(dt);
+    }
+
+    // Controllo globale tasto PAUSA [ESC] / [P] o tocco su icona ⏸️ (in alto a destra)
+    const inActivePlay = (this.current === S.READY || this.current === S.SWING ||
+                          this.current === S.FLY   || this.current === S.LAND  ||
+                          this.current === S.MISS  || this.current === S.CLIMB_DONE ||
+                          this.current === S.CART  || this.current === S.PLACEMENT);
+    if (inActivePlay) {
+      const clickedPauseBtn = inp.lastClicked && inp.lastPointerX >= 210 && inp.lastPointerY <= 26;
+      if (inp.pressed(ACT.PAUSE) || clickedPauseBtn) {
+        this.returnState = this.current;
+        this.current = S.PAUSE;
+        this.dwell = 0;
+        this.frameInState = 0;
+        return;
+      }
     }
 
     switch (this.current) {
@@ -1290,7 +1306,7 @@ class StateMachine {
       // --- MENU: navigazione (su/giù) + comando d'azione / touch diretto ---
       case S.MENU: {
         const n = g.menuItems.length;
-        const y0 = 100;
+        const y0 = 98;
         if (inp.lastClicked) {
           for (let i = 0; i < n; i++) {
             const rowY = y0 + i * 23;
@@ -1300,10 +1316,11 @@ class StateMachine {
               return;
             }
           }
+        } else {
+          if (inp.pressed(ACT.UP))   g.menuIndex = (g.menuIndex + n - 1) % n;
+          if (inp.pressed(ACT.DOWN)) g.menuIndex = (g.menuIndex + 1) % n;
+          if (inp.pressed(ACT.ACTION)) this.fire(g.menuIndex);
         }
-        if (inp.pressed(ACT.UP))   g.menuIndex = (g.menuIndex + n - 1) % n;
-        if (inp.pressed(ACT.DOWN)) g.menuIndex = (g.menuIndex + 1) % n;
-        if (inp.pressed(ACT.ACTION)) this.fire(g.menuIndex);
         return;
       }
 
@@ -1329,11 +1346,16 @@ class StateMachine {
               return;
             }
           }
+          if (inp.lastPointerY >= 275) {
+            this.fire(0); // -> MENU
+            return;
+          }
+        } else {
+          if (inp.pressed(ACT.UP))   g.audioMenuIndex = (g.audioMenuIndex + n - 1) % n;
+          if (inp.pressed(ACT.DOWN)) g.audioMenuIndex = (g.audioMenuIndex + 1) % n;
+          if (inp.pressed(ACT.ACTION)) this._activateAudioOption(g.audioMenuIndex);
+          if (inp.pressed(ACT.BACK)) this.fire(0); // -> MENU
         }
-        if (inp.pressed(ACT.UP))   g.audioMenuIndex = (g.audioMenuIndex + n - 1) % n;
-        if (inp.pressed(ACT.DOWN)) g.audioMenuIndex = (g.audioMenuIndex + 1) % n;
-        if (inp.pressed(ACT.ACTION)) this._activateAudioOption(g.audioMenuIndex);
-        if (inp.pressed(ACT.BACK)) this.fire(0); // -> MENU
         return;
       }
 
@@ -1366,7 +1388,7 @@ class StateMachine {
         // Sistema 6: il ricevente resta FERMO durante il volo (box di presa fisso al
         // centro). La presa dipende solo dal timing del rilascio, non dal suo moto.
         const s = g.stone;
-        const W = g.ctx.canvas.width;
+        const W = 240;
         // DOUBLE-FLY: in volo il comando d'azione richiama la stessa `p()` del lancio, che
         // prende il ramo "rilancio". Fuori finestra / senza cariche / senza sblocco non
         // succede nulla e non si consuma nulla. [SPEC §4.1; LETTO javap j.m98a -> j.p()]
@@ -1431,7 +1453,7 @@ class StateMachine {
           }
         }
         // MISS: blocco uscito sotto lo schermo (né presa in salita né in discesa).
-        if (!s.caught && s.yPx >= g.ctx.canvas.height + CONFIG.TILE) {
+        if (!s.caught && s.yPx >= 320 + CONFIG.TILE) {
           s.fell = true;
           this.fire(1);                             // -> MISS
         }
@@ -1439,10 +1461,24 @@ class StateMachine {
       }
 
       // --- PAUSE: azione = riprendi (stato salvato); back = esci al menu ---
-      case S.PAUSE:
-        if (inp.pressed(ACT.ACTION))    this.fire(0); // riprendi -> returnState
-        else if (inp.pressed(ACT.BACK)) this.fire(1); // esci -> MENU
+      case S.PAUSE: {
+        if (inp.lastClicked) {
+          if (inp.lastPointerY >= 140 && inp.lastPointerY <= 178) {
+            this.fire(0); // riprendi -> returnState
+            return;
+          }
+          if (inp.lastPointerY >= 185 && inp.lastPointerY <= 225) {
+            this.fire(1); // esci -> MENU
+            return;
+          }
+        }
+        if (inp.pressed(ACT.ACTION) || inp.pressed(ACT.PAUSE)) {
+          this.fire(0); // riprendi -> returnState
+        } else if (inp.pressed(ACT.BACK)) {
+          this.fire(1); // esci -> MENU
+        }
         return;
+      }
 
       // --- DIALOG: azione/back = chiudi -> stato salvato ---
       case S.DIALOG:
@@ -1492,7 +1528,7 @@ class StateMachine {
 
   render(ctx) {
     const g = this.game;
-    const W = ctx.canvas.width, H = ctx.canvas.height;
+    const W = 240, H = 320;
 
     // Sistema 15: sfondo — cielo/deserto procedurale negli stati "in gioco", altrimenti
     // il colore piatto per stato del Sistema 1 (menu/boot/pausa/dialog/frontend).
@@ -1569,7 +1605,7 @@ class StateMachine {
                       :                                "#d50000";
 
       ctx.save();
-      ctx.font = "bold 15px monospace";
+      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
       const textMetrics = ctx.measureText(text);
       const pw = Math.max(140, textMetrics.width + 28);
       const ph = 30;
@@ -1611,33 +1647,27 @@ class StateMachine {
       this.renderBanner(ctx);
     }
 
-    // Sistema 16: overlay PAUSA semi-trasparente sopra il mondo di gioco congelato.
-    if (this.current === S.PAUSE) {
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(0, 0, W, H);
-    }
-
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // Nome dello stato a centro schermo: strumento di sviluppo, non fa parte del gioco.
+    // Nome dello stato a centro schermo (solo in DEBUG)
     if (CONFIG.DEBUG) {
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 20px monospace";
+      ctx.font = "bold 20px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(this.current, W / 2, H / 2 - 10);
       if (this.current === S.DIALOG && this.returnState) {
-        ctx.font = "11px monospace";
+        ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillText("(return: " + this.returnState + ")", W / 2, H / 2 + 14);
       }
     }
 
-    // BOOT — logo e avanzamento del caricamento.  [STRINGS_it.json 2]
+    // BOOT — logo e avanzamento del caricamento
     if (this.current === S.BOOT) {
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 15px monospace";
+      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(str(2), W / 2, H / 2 - 20);
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(g.loadProgress.toFixed(0) + "%", W / 2, H / 2 + 4);
       // Barra di caricamento.
       const bw = 120, bx = (W - bw) / 2, by = H / 2 + 14;
@@ -1649,31 +1679,51 @@ class StateMachine {
 
     // PAUSA — sopra il mondo congelato
     if (this.current === S.PAUSE) {
-      ctx.fillStyle = "rgba(10, 14, 20, 0.85)";
+      ctx.fillStyle = "rgba(10, 14, 20, 0.88)";
       ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = "#212730";
-      ctx.fillRect(20, 65, W - 40, H - 130);
+      ctx.fillStyle = "#1b2028";
+      ctx.fillRect(20, 50, W - 40, H - 100);
       ctx.strokeStyle = "#ffd54a";
       ctx.lineWidth = 2;
-      ctx.strokeRect(20, 65, W - 40, H - 130);
+      ctx.strokeRect(20, 50, W - 40, H - 100);
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 16px monospace";
-      ctx.fillText("⏸️ PAUSA", W / 2, 95);
+      ctx.font = "bold 16px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText("⏸️ PAUSA", W / 2, 75);
 
-      ctx.fillStyle = "#fff";
-      ctx.font = "bold 12px monospace";
-      ctx.fillText("Punteggio: " + g.scoreDisplayed, W / 2, 130);
+      ctx.fillStyle = "#cfd8dc";
+      ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText("Punteggio: " + g.scoreDisplayed, W / 2, 105);
 
-      ctx.fillStyle = "#aed581";
-      ctx.font = "11px monospace";
-      ctx.fillText("Tocca o premi Spazio", W / 2, 170);
-      ctx.fillText("per Continuare ▶️", W / 2, 185);
+      // Pulsante 1: RIPRENDI
+      ctx.fillStyle = "rgba(79, 195, 247, 0.25)";
+      ctx.fillRect(32, 135, W - 64, 30);
+      ctx.strokeStyle = "#4fc3f7";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(32, 135, W - 64, 30);
+
+      ctx.fillStyle = "#4fc3f7";
+      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText("▶️ RIPRENDI", W / 2, 150);
+
+      // Pulsante 2: ESCI AL MENU
+      ctx.fillStyle = "rgba(239, 83, 80, 0.2)";
+      ctx.fillRect(32, 180, W - 64, 30);
+      ctx.strokeStyle = "#ef5350";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(32, 180, W - 64, 30);
 
       ctx.fillStyle = "#ef5350";
-      ctx.font = "10px monospace";
-      ctx.fillText("Premi [Esc] per Uscire", W / 2, 220);
+      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText("🔙 ESCI AL MENU", W / 2, 195);
+
+      ctx.fillStyle = "#90a4ae";
+      ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText("Tocca i tasti o premi [Esc]", W / 2, 235);
     }
 
     // MENU — titolo, voci navigabili, record.
@@ -1686,14 +1736,14 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 15px monospace";
+      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("PYRAMID BLOXX", W / 2, 36);
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic bold 11px monospace";
+      ctx.font = "italic bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("✨ Annina & Cacao Edition ✨", W / 2, 54);
 
       const y0 = 98;
-      ctx.font = "11px monospace";
+      ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
       for (let i = 0; i < g.menuItems.length; i++) {
         const sel = (i === g.menuIndex);
         let label = g.menuItems[i];
@@ -1711,7 +1761,7 @@ class StateMachine {
         ctx.fillText(label, W / 2, y0 + i * 23);
       }
 
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#80cbc4";
       ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * 23 + 14);
     }
@@ -1731,11 +1781,11 @@ class StateMachine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 13px monospace";
+      ctx.font = "bold 13px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("🏆 RECORD & STATISTICHE 🏆", W / 2, 20);
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic bold 10px monospace";
+      ctx.font = "italic bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("✨ Annina & Cacao Records ✨", W / 2, 35);
 
       const emp = g.stats.empire;
@@ -1751,30 +1801,30 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#4fc3f7";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("🏛️ Costruisci la Casetta", 18, b1Y + 14);
 
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Miglior Punteggio:", 18, b1Y + 34);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 10px monospace";
+      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(emp.bestScore > 0 ? String(emp.bestScore) : "—", W - 18, b1Y + 34);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Miglior Titolo:", 18, b1Y + 52);
       ctx.textAlign = "right";
       const rankStr = (emp.bestRank >= 0 && RANK_NAMES[emp.bestRank]) ? RANK_NAMES[emp.bestRank] : "—";
       ctx.fillStyle = (emp.bestRank >= 0 && RANK_COLORS[emp.bestRank]) ? RANK_COLORS[emp.bestRank] : "#cfd8dc";
-      ctx.font = "bold 9px monospace";
+      ctx.font = "bold 9px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(rankStr, W - 18, b1Y + 52);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Casette Finite:", 18, b1Y + 70);
       ctx.textAlign = "right";
       ctx.fillStyle = "#aed581";
@@ -1782,6 +1832,7 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Miglior Tempo:", 18, b1Y + 88);
       ctx.textAlign = "right";
       ctx.fillStyle = "#80cbc4";
@@ -1794,6 +1845,7 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Max Perfetti:", 18, b1Y + 104);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
@@ -1809,25 +1861,25 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("⚡ Scalata Rapida (Quick)", 18, b2Y + 14);
 
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Record Punteggio:", 18, b2Y + 35);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 10px monospace";
+      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(qk.highScore > 0 ? String(qk.highScore) : "—", W - 18, b2Y + 35);
 
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Piani Scalati Record:", 18, b2Y + 54);
       ctx.textAlign = "right";
       ctx.fillStyle = "#fff59d";
       ctx.fillText(qk.maxFloors > 0 ? (qk.maxFloors + " Piani") : "—", W - 18, b2Y + 54);
 
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Combo Massima:", 18, b2Y + 73);
       ctx.textAlign = "right";
@@ -1844,7 +1896,7 @@ class StateMachine {
       ctx.strokeRect(20, H - 36, W - 40, 24);
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("🔙 TORNA AL MENU", W / 2, H - 24);
     }
 
@@ -1858,14 +1910,14 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 12px monospace";
+      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("COME TI SENTI OGGI", W / 2, 38);
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 15px monospace";
+      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("ANNINA? ✨", W / 2, 54);
 
       ctx.fillStyle = "#b0bec5";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Scegli la tua colonna sonora:", W / 2, 75);
 
       const items = [
@@ -1890,7 +1942,7 @@ class StateMachine {
           ctx.strokeRect(12, y0 + i * 26 - 11, W - 24, 22);
         }
 
-        ctx.font = sel ? "bold 11px monospace" : "11px monospace";
+        ctx.font = sel ? "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace" : "11px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillStyle = isActive ? "#aed581" : (sel ? "#ffd54a" : "#cfd8dc");
         
         let text = `${item.icon} ${item.label}`;
@@ -1898,7 +1950,7 @@ class StateMachine {
         ctx.fillText(text, W / 2, y0 + i * 26);
       }
 
-      ctx.font = "9px monospace";
+      ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#90a4ae";
       ctx.fillText("Inserisci i tuoi brani in assets/audio/", W / 2, H - 24);
       ctx.fillText("baddie.mp3 / cattiva.mp3 / espanol.mp3", W / 2, H - 12);
@@ -1916,11 +1968,11 @@ class StateMachine {
       ctx.strokeRect(15, 35, W - 30, H - 70);
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 13px monospace";
+      ctx.font = "bold 13px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Per la mia Annina ❤️", W / 2, 58);
 
       ctx.fillStyle = "#eceff1";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       const lines = [
         "Questo gioco è fatto",
         "apposta per te,",
@@ -1929,8 +1981,8 @@ class StateMachine {
         "",
         "Insieme a te e al nostro",
         "fedele Cacao 🐕",
-        "costruiamo tra le Alpi",
-        "e sulle spiagge di Palma!",
+        "costruiamo tra le Alpi,",
+        "Palma e sotto i Portici!",
         "",
         "Premi [AZIONE] o tocca",
         "lo schermo per tornare."
@@ -1942,17 +1994,17 @@ class StateMachine {
 
     // CLIMB_DONE — scalata completata
     if (this.current === S.CLIMB_DONE) {
-      ctx.font = "12px monospace";
+      ctx.font = "12px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#ffd54a";
       ctx.fillText("✨ Scalata Completata! ✨", W / 2, H / 2 + 16);
-      ctx.font = "11px monospace";
+      ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
       if (g.mode === MODE.EMPIRE) {
         const q = g.pieceQuality();
         ctx.fillStyle = CONFIG.HOUSE_QUALITY_COLORS[q];
         ctx.fillText("Pezzo " + CONFIG.HOUSE_QUALITY_NAMES[q] +
                      " (x" + CONFIG.HOUSE_QUALITY_MULT[q] + ")",
                      W / 2, H / 2 + 34);
-        ctx.fillStyle = "#cfd8dc"; ctx.font = "10px monospace";
+        ctx.fillStyle = "#cfd8dc"; ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillText(g.house.nextDef ? "In consegna: " + g.house.nextDef.label : "",
                      W / 2, H / 2 + 50);
       }
@@ -1965,15 +2017,15 @@ class StateMachine {
 
       let y = 50;
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 14px monospace";
+      ctx.font = "bold 14px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("🎉 VITTORIA! 🎉", W / 2, y); y += 18;
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic bold 11px monospace";
+      ctx.font = "italic bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Casetta Completata!", W / 2, y); y += 26;
 
       if (g.mode === MODE.EMPIRE) {
         ctx.fillStyle = RANK_COLORS[g.rank] || "#aed581";
-        ctx.font = "10px monospace";
+        ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
         for (const ln of wrapText(ctx, RANK_NAMES[g.rank] || "Grande Architetto!", W - 30)) {
           ctx.fillText(ln, W / 2, y); y += 13;
         }
@@ -1981,11 +2033,11 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 12px monospace";
+      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Punteggio Totale: " + g.scoreDisplayed, W / 2, y); y += 20;
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Combo Massima: x" + g.comboMax, W / 2, y); y += 15;
       ctx.fillText("Tempo Bonus: +" + g.timeBonus(), W / 2, y); y += 15;
 
@@ -1996,7 +2048,7 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Tocca o premi Spazio per il Menu", W / 2, H - 24);
     }
 
@@ -2007,23 +2059,23 @@ class StateMachine {
 
       let y = 60;
       ctx.fillStyle = "#ef5350";
-      ctx.font = "bold 15px monospace";
+      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("💔 PARTITA TERMINATA 💔", W / 2, y); y += 22;
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Il blocco è caduto troppe volte!", W / 2, y); y += 28;
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 13px monospace";
+      ctx.font = "bold 13px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Punteggio Finale: " + g.scoreDisplayed, W / 2, y); y += 20;
 
       ctx.fillStyle = "#80cbc4";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Miglior Record: " + g.highScore, W / 2, y); y += 30;
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 11px monospace";
+      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText("Tocca o premi Spazio per Riprovare", W / 2, H - 24);
     }
 
@@ -2035,7 +2087,7 @@ class StateMachine {
         // HUD di debug (se attivato per sviluppo)
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.font = "9px monospace";
+        ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillStyle = "rgba(0,0,0,0.55)";
         const hudH = (this.current === S.SWING) ? 91
                    : (this.current === S.FLY || this.current === S.LAND) ? 91 : 60;
@@ -2052,7 +2104,7 @@ class StateMachine {
   renderBanner(ctx) {
     const g = this.game;
     if (!g.banner || g.banner.timer <= 0) return;
-    const W = ctx.canvas.width;
+    const W = 240;
     const alpha = Math.min(1, g.banner.timer / 400);
     const bw = W - 30;
     const bh = 34;
@@ -2074,11 +2126,11 @@ class StateMachine {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.font = "bold 11px monospace";
+    ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
     ctx.fillStyle = g.banner.color || "#ffd54a";
     ctx.fillText(g.banner.title, W / 2, by + 11);
 
-    ctx.font = "9px monospace";
+    ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
     ctx.fillStyle = "#e0e0e0";
     ctx.fillText(g.banner.subtitle, W / 2, by + 24);
 
@@ -2089,7 +2141,7 @@ class StateMachine {
      HUD DI GIOCO — in alto a schermo intero
      ======================================================================= */
   renderHud(ctx) {
-    const g = this.game, W = ctx.canvas.width;
+    const g = this.game, W = 240;
     const barH = 22;
 
     ctx.fillStyle = "rgba(0,0,0,0.45)";
@@ -2100,14 +2152,14 @@ class StateMachine {
     // Punteggio, a sinistra.
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffd54a";
-    ctx.font = "bold 12px monospace";
+    ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
     ctx.fillText(String(g.scoreDisplayed), 6, 11);
 
     // Combo attiva
     if (g.combo > 1 && g.comboTimer > 0) {
       ctx.fillStyle = "#aed581";
-      ctx.font = "bold 10px monospace";
-      ctx.fillText("x" + g.combo, 6 + ctx.measureText(String(g.scoreDisplayed)).width + 8, 11);
+      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText("x" + g.combo, 6 + ctx.measureText(String(g.scoreDisplayed)).width + 6, 11);
     }
 
     // Badge evento ambientale (centro)
@@ -2131,9 +2183,9 @@ class StateMachine {
       }
 
       ctx.save();
-      ctx.font = "bold 9px monospace";
+      ctx.font = "bold 9px 'Courier New', Courier, Menlo, Monaco, monospace";
       const tw = ctx.measureText(label).width;
-      const pw = tw + 10;
+      const pw = tw + 8;
       const px = Math.round((W - pw) / 2);
       const py = 2;
       ctx.fillStyle = "rgba(10, 14, 24, 0.85)";
@@ -2152,14 +2204,31 @@ class StateMachine {
       ctx.restore();
     }
 
-    // Tempo rimanente della scalata, a destra
+    // Pulsante Touch PAUSA ⏸️ in alto a destra
+    const btnX = W - 22, btnY = 3, btnW = 18, btnH = 16;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(btnX, btnY, btnW, btnH, 3);
+    else ctx.rect(btnX, btnY, btnW, btnH);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 213, 74, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
+    ctx.fillStyle = "#ffd54a";
+    ctx.fillText("⏸️", btnX + btnW / 2, btnY + btnH / 2);
+
+    // Tempo rimanente della scalata (Empire mode)
     if (g.timeLimitMs > 0) {
       const left = Math.max(0, g.timeLimitMs - g.climbElapsed);
       const s = Math.ceil(left / 1000);
       ctx.textAlign = "right";
       ctx.fillStyle = left > 0 ? "#cfd8dc" : "#ef5350";
-      ctx.font = "11px monospace";
-      ctx.fillText(Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"), W - 6, 11);
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillText(Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"), btnX - 6, 11);
     }
 
     // Errori / Vite: mostrati SOLO nella modalità Empire (Costruisci la casetta), NON in Quick!
@@ -2353,7 +2422,7 @@ class Worker {
      due direzioni, quindi non serve alcuno specchiamento. */
   renderSprite(ctx, d) {
     if (CONFIG.THEME === 'custom') {
-      const ox = this.poseOriginX(ctx.canvas.width);
+      const ox = this.poseOriginX(240);
       const oy = this.poseOriginWorldY() - this.game.cameraY;
       
       if (this.cls === CONFIG.CLASS_DONKEY) {
@@ -2408,38 +2477,24 @@ class Worker {
     const cls = SPRITES.chars[this.cls] ? this.cls : 0;
     const rows = SPRITES.chars[cls].s;
     const anim = rows[Math.min(this.poseSlot(d), rows.length - 1)];
-    const ox = this.poseOriginX(ctx.canvas.width);
+    const ox = this.poseOriginX(240);
     const oy = this.poseOriginWorldY() - this.game.cameraY;
 
     // --- LAYER GAMBE (classi 0 e 1, solo con il blocco in mano) ------------------------
-    // Gli slot 0/1 del personaggio sono SOLO IL BUSTO: le gambe sono uno sprite a parte,
-    // disegnato PRIMA e alla STESSA (x,y). [LETTO j.g(Graphics) offset 439-536]
-    //   if (w.d == 1 && (c == 0 || c == 1)) {
-    //       k = (c == 0) ? (w.g < 0 ? 0 : 1) : (w.g < 0 ? 2 : 3);
-    //       if (d[k].a(g,x,y)) d[k].a(g,x,y);      // gambe
-    //       w.b( l(w.a()) );                       // frame del busto dal dondolio
-    //   }
-    //   if (w.a(g,x,y)) w.a(g,x,y);                // busto, stesso x,y
     let bodyFrame = animFrameAt(anim, this.animMs);
     if (d === 1 && (cls === CONFIG.CLASS_LEGS_A || cls === CONFIG.CLASS_LEGS_B)) {
       const back = this.swingVel() < 0;
       const legs = SPRITES.acc[(cls === CONFIG.CLASS_LEGS_A) ? (back ? "gambe0_dx" : "gambe0_sx")
                                                              : (back ? "gambe1_dx" : "gambe1_sx")];
       drawAnimFrame(ctx, legs, animFrameAt(legs, this.animMs), ox, oy, false);
-      // `l(int n) = ((d.e + 32) * n) / 65` [LETTO j.l(int) offset 0-16]: il frame del busto
-      // NON viene dal tempo, viene dalla POSIZIONE DI DONDOLIO del blocco -> l'operaio si
-      // inclina con l'oscillazione. Nell'originale `d.e` sta in ±32; qui `offset` sta in
-      // ±amp, quindi lo si normalizza. [DEDOTTO: solo il fattore di scala]
       const e32 = this.amp ? Math.round(this.offset * CONFIG.BOB_OFFSET / this.amp) : 0;
       bodyFrame = Math.floor(((e32 + CONFIG.BOB_OFFSET) * anim.f.length) / CONFIG.BOB_DIV);
     }
     drawAnimFrame(ctx, anim, bodyFrame, ox, oy, false);
-    // Classe 2: l'ARGANO (accessorio d[6], SPEC §15.2) sta all'ANCORA, non sul corpo —
-    // il corpo pende sotto di 63 px. [LETTO j.a(Graphics,b,boolean) offset 59-96]
     if (this.cls === CONFIG.CLASS_MONKEY) {
       const acc = (d === 1) ? SPRITES.acc.argano_blocco : SPRITES.acc.argano;
       drawAnimFrame(ctx, acc, animFrameAt(acc, this.animMs),
-                    this.anchorX(ctx.canvas.width), this.anchorWorldY() - this.game.cameraY, false);
+                    this.anchorX(240), this.anchorWorldY() - this.game.cameraY, false);
     }
   }
 
@@ -2504,23 +2559,16 @@ class Worker {
     }
 
     // Avanzamento + wrap del ciclo completo. [j.a(...) 1611-1617]
-    // Sistema 6: la velocità di fase scala con `s` (s/SWING_SPEED_INIT). A s=INIT
-    // l'oscillazione è quella base; un PERFETTO abbassa s -> dondola più lento (più facile).
     this.phase += dt * CONFIG.SWING_PHASE_SPEED * (effSpeed + jitter) / CONFIG.SWING_SPEED_INIT;
     this.phase = (this.phase + CONFIG.SWING_PHASE_CYCLE) % CONFIG.SWING_PHASE_CYCLE;
-    // Conversione fase->angolo: (fase<<8)/3200 -> angolo a 16 bit. [j.m89k 1587]
     this.angle = Math.floor((this.phase * 256) / CONFIG.PHASE_TO_ANGLE_DIV) & 0xffff;
-    // x(fase) = centro + (m105c(angolo) * AMPIEZZA) >> 10. [j.a(...) 1640]
     this.offset = (this._sineInterp(this.angle) * this.amp) >> 10;
   }
 
-  // Render layer #4 (ARCH §2.2): gru/operaio + blocco appeso. Placeholder a
-  // rettangoli (Sistema 3, niente grafica). offset trattato come pixel schermo.
+  // Render layer #4 (ARCH §2.2): gru/operaio + blocco appeso.
   render(ctx) {
-    // Trave/perno e fune: schizzo a mano del sistema 3, prima che ci fossero gli sprite.
-    // L'operaio col blocco e' gia' disegnato per intero dal suo sprite. [CONFIG.DEBUG]
     if (CONFIG.DEBUG) {
-      const cx = ctx.canvas.width >> 1;        // centro di oscillazione
+      const cx = 120;                          // centro di oscillazione
       const pivotY = this.blockY - 40;         // sommità gru (perno), relativa al livello
       const workerY = this.blockY - 26;        // operaio/trolley, relativo al livello
       ctx.fillStyle = "#8d6e63";
@@ -2538,7 +2586,7 @@ class Worker {
 
     // Blocco appeso: frame del poligono corrente (d.i = releaseSlot del blocco in mano).
     const slot = blockSlotForOffset(this.offset, this.amp);
-    const hx = this.handsX(ctx.canvas.width, 1);
+    const hx = this.handsX(240, 1);
     const hy = this.handsWorldY(1) - this.game.cameraY;
     if (CONFIG.THEME === 'custom') {
       const isPalma = (this.game.scenario === 'palma');
@@ -2556,18 +2604,11 @@ class Worker {
     }
   }
 
-  // Sistema 5 — render dell'OPERAIO SUPERIORE che riceve il blocco. Stessa
-  // oscillazione del Worker base; box di presa aperto (placeholder a rettangoli).
-  // Il box è quello REALE di WORKER_CATCH_BOX[classe][slot] (SPEC §14.1): il bersaglio
-  // della centratura (SPEC §5) è il suo CENTRO, non più il centro tile.
+  // Sistema 5 — render dell'OPERAIO SUPERIORE che riceve il blocco.
   renderCatcher(ctx) {
-    // Guida verticale del centro e box di presa REALE (WORKER_CATCH_BOX[classe][slot]
-    // traslato all'origine posa, mondo -> schermo, d == 0). Servivano a leggere la
-    // centratura contro l'emulatore: in partita la presa si legge dallo sprite.
-    // [CONFIG.DEBUG — geometria invariata, vedi SPEC §14.1/§14.5]
     if (CONFIG.DEBUG) {
-      const W = ctx.canvas.width, t = CONFIG.TILE;
-      const cx = (W >> 1) + this.offset;       // centro oscillante del box di presa
+      const W = 240, t = CONFIG.TILE;
+      const cx = 120 + this.offset;            // centro oscillante del box di presa
       const by = this.blockY;                  // bordo alto del box
       ctx.strokeStyle = "rgba(255,213,74,0.35)"; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, by + t + 16); ctx.stroke();
@@ -2966,7 +3007,7 @@ class WorkerChain {
   // Render layer #2 (ARCH §2.2): impalcatura + operai. Solo la finestra visibile: la
   // torre può essere lunga 101 operai (Quick), lo schermo ne mostra ~CAMERA_BASE tile.
   render(ctx, state) {
-    const W = ctx.canvas.width, H = ctx.canvas.height, t = CONFIG.TILE, cx = W >> 1;
+    const W = 240, H = 320, t = CONFIG.TILE, cx = 120;
     const isCustom = (CONFIG.THEME === 'custom');
     const isPalma = (this.game.scenario === 'palma');
     const isBologna = (this.game.scenario === 'bologna');
@@ -3171,17 +3212,18 @@ class MountainHouse {
 
   // Centro-base di una cella in coordinate schermo (l'origine dello sprite blocco è
   // ~ centro-basso: pivot [35,41] contro mod [21,2] del frame dritto).
-  cellX(ctx, gx) { return Math.round(ctx.canvas.width / 2 + gx * CONFIG.HOUSE_CELL_W); }
+  cellX(ctx, gx) { return Math.round(120 + gx * CONFIG.HOUSE_CELL_W); }
   cellY(ctx, gy) {
-    return Math.round(ctx.canvas.height * CONFIG.HOUSE_BASE_Y_FRAC - gy * CONFIG.HOUSE_CELL_H);
+    return Math.round(320 * CONFIG.HOUSE_BASE_Y_FRAC - gy * CONFIG.HOUSE_CELL_H);
   }
 
   render(ctx, state) {
-    const W = ctx.canvas.width, H = ctx.canvas.height;
+    const W = 240, H = 320;
     const ground = Math.round(H * CONFIG.HOUSE_BASE_Y_FRAC);
     const isCustom = (CONFIG.THEME === 'custom');
     const isPalma = (this.game.scenario === 'palma');
-    const cx = W >> 1;
+    const isBologna = (this.game.scenario === 'bologna');
+    const cx = 120;
 
     if (isCustom) {
       // Sfondo cantiere sfumato
@@ -3198,6 +3240,15 @@ class MountainHouse {
         ctx.fillStyle = "#cca569";
         ctx.fillRect(20, ground + 16, 50, 2);
         ctx.fillRect(140, ground + 22, 60, 2);
+      } else if (isBologna) {
+        // Pavimentazione in ciottoli e marciapiede dei portici
+        ctx.fillStyle = "#5d4037";
+        ctx.fillRect(0, ground + 4, W, H - ground - 4);
+        ctx.fillStyle = "#8d6e63";
+        ctx.fillRect(0, ground + 4, W, 2);
+        ctx.fillStyle = "#a1887f";
+        ctx.fillRect(15, ground + 12, 45, 2);
+        ctx.fillRect(135, ground + 18, 55, 2);
       } else {
         // Prato alpino con fiori e ciottoli
         ctx.fillStyle = "#2a4420";
@@ -3213,7 +3264,6 @@ class MountainHouse {
 
       // Sagome tratteggiate per i pezzi mancanti
       ctx.setLineDash([2, 3]);
-      const isBologna = (this.game.scenario === 'bologna');
       ctx.strokeStyle = isPalma ? "rgba(245, 196, 120, 0.40)" : isBologna ? "rgba(255, 160, 120, 0.40)" : "rgba(255, 128, 171, 0.40)";
       for (let i = this.placed.length; i < CONFIG.HOUSE_PIECES.length; i++) {
         const d = CONFIG.HOUSE_PIECES[i];
@@ -3253,7 +3303,7 @@ class MountainHouse {
       }
 
       // Fumo animato dal camino se pezzo 8 è completato (Montagna)
-      if (this.placed.length >= 8 && !isPalma) {
+      if (this.placed.length >= 8 && !isPalma && !isBologna) {
         const fx = cx + 16;
         const fy = ground - 84 - 44;
         const smokeOffset = (Date.now() / 220) % 20;
@@ -3278,32 +3328,32 @@ class MountainHouse {
 
       // Box Didascalia & Punteggio
       ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#202530";
       ctx.fillRect(8, H - 38, W - 16, 32);
-      ctx.strokeStyle = isPalma ? "#ffd54a" : "#ff80ab";
+      ctx.strokeStyle = isPalma ? "#ffd54a" : isBologna ? "#ffb74d" : "#ff80ab";
       ctx.lineWidth = 1;
       ctx.strokeRect(8, H - 38, W - 16, 32);
 
-      const title = isPalma ? "CHIRINGUITO A PALMA 🏖️" : "CHALET ALPINO DI ANNINA 🏔️";
-      ctx.fillStyle = isPalma ? "#ffe082" : "#ff80ab";
-      ctx.font = "bold 10px monospace";
+      const title = isPalma ? "CHIRINGUITO A PALMA 🏖️" : isBologna ? "PALAZZINA A BOLOGNA 🏛️" : "CHALET ALPINO DI ANNINA 🏔️";
+      ctx.fillStyle = isPalma ? "#ffe082" : isBologna ? "#ffcc80" : "#ff80ab";
+      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(title + " (" + this.placed.length + "/" + CONFIG.HOUSE_PIECES.length + ")", W / 2, H - 24);
 
       const p = this.lastPiece;
       if (state === S.PLACEMENT && p) {
         ctx.fillStyle = CONFIG.HOUSE_QUALITY_COLORS[p.quality] || "#fff";
-        ctx.font = "10px monospace";
+        ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillText(p.def.label + " " + CONFIG.HOUSE_QUALITY_NAMES[p.quality] +
                      " x" + CONFIG.HOUSE_QUALITY_MULT[p.quality] +
                      " = +" + p.points + " pt", W / 2, H - 11);
       } else if (state === S.CART && this.nextDef) {
         ctx.fillStyle = "#80deea";
-        ctx.font = "10px monospace";
+        ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillText("In arrivo: " + this.nextDef.label, W / 2, H - 11);
       } else {
         ctx.fillStyle = "#a5d6a7";
-        ctx.font = "10px monospace";
+        ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillText("Completata! Punti Totali: +" + this.points, W / 2, H - 11);
       }
 
@@ -3336,14 +3386,14 @@ class MountainHouse {
       }
 
       ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-      ctx.font = "10px monospace";
+      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("casa " + this.placed.length + "/" + CONFIG.HOUSE_PIECES.length +
                    "   fase: " + this.stage, W / 2, ground + 17);
       const p = this.lastPiece;
       if (state === S.PLACEMENT && p) {
         ctx.fillStyle = CONFIG.HOUSE_QUALITY_COLORS[p.quality] || "#fff";
-        ctx.font = "bold 10px monospace";
+        ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
         ctx.fillText(p.def.label + " " + CONFIG.HOUSE_QUALITY_NAMES[p.quality] +
                      " x" + CONFIG.HOUSE_QUALITY_MULT[p.quality] +
                      " = +" + p.points, W / 2, ground + 30);
@@ -3371,7 +3421,7 @@ class Cart {
   get progress() { return Math.min(1, this.elapsed / CONFIG.CART_TRAVEL_MS); }
 
   render(ctx, state) {
-    const W = ctx.canvas.width, t = CONFIG.TILE;
+    const W = 240, t = CONFIG.TILE;
     const x0 = -60, x1 = W * CONFIG.CART_ROOM_X_FRAC, y = CONFIG.CART_Y;
     const isCustom = (CONFIG.THEME === 'custom');
     const isPalma = (this.game.scenario === 'palma');
@@ -4367,7 +4417,20 @@ class Game {
     }
 
     // Render-pass (legge lo stato, non lo modifica).
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const targetW = Math.round(240 * dpr);
+    const targetH = Math.round(320 * dpr);
+    if (this.canvas.width !== targetW || this.canvas.height !== targetH) {
+      this.canvas.width = targetW;
+      this.canvas.height = targetH;
+    }
+    this.ctx.save();
+    this.ctx.scale(dpr, dpr);
+    this.ctx.imageSmoothingEnabled = false;
+
     this.sm.render(this.ctx);
+
+    this.ctx.restore();
 
     requestAnimationFrame((t) => this.frame(t));
   }
@@ -4376,6 +4439,42 @@ class Game {
     requestAnimationFrame((t) => this.frame(t));
   }
 }
+
+function fitGameToScreen() {
+  const canvas = document.getElementById("game");
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  if (!container) return;
+  const rect = container.getBoundingClientRect();
+  const availableW = rect.width;
+  const availableH = rect.height;
+  if (availableW <= 0 || availableH <= 0) return;
+
+  const targetRatio = 3 / 4;
+  let finalW, finalH;
+
+  if (availableW / availableH > targetRatio) {
+    // Schermo più largo del 3:4 (widescreen desktop o landscape)
+    finalH = availableH;
+    finalW = finalH * targetRatio;
+  } else {
+    // Schermo più alto del 3:4 (smartphone portrait es. iPhone SE, iPhone 13)
+    finalW = availableW;
+    finalH = finalW / targetRatio;
+    if (finalH > availableH) {
+      finalH = availableH;
+      finalW = finalH * targetRatio;
+    }
+  }
+
+  canvas.style.width = Math.floor(finalW) + "px";
+  canvas.style.height = Math.floor(finalH) + "px";
+}
+
+window.addEventListener("resize", fitGameToScreen);
+window.addEventListener("orientationchange", () => setTimeout(fitGameToScreen, 120));
+window.addEventListener("DOMContentLoaded", fitGameToScreen);
+setTimeout(fitGameToScreen, 50);
 
 /* ---- bootstrap ---- */
 const game = new Game(document.getElementById("game"));
