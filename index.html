@@ -229,7 +229,7 @@
 <body>
 <div class="game-wrapper">
   <div class="frame-header">
-    <div class="frame-title">🏛️ PYRAMID BLOXX</div>
+    <div class="frame-title">🏛 PYRAMID BLOXX</div>
     <div class="frame-badge">✨ ANNINA & CACAO ✨</div>
   </div>
   <div class="canvas-container">
@@ -243,7 +243,7 @@
     <span><kbd>ESC</kbd> Pausa</span>
   </div>
   <div class="mobile-action-bar">
-    <button id="btn-pause-mobile" class="mobile-btn mobile-btn-icon" aria-label="Pausa">⏸️</button>
+    <button id="btn-pause-mobile" class="mobile-btn mobile-btn-icon" aria-label="Pausa">⏸</button>
     <button id="btn-action-mobile" class="mobile-btn mobile-btn-action">
       <span>🚀 LANCIA / AZIONE</span>
     </button>
@@ -252,6 +252,29 @@
 </div>
 <script>
 "use strict";
+
+// Patch globale Canvas 2D per prevenire il noto bug di WebKit/Safari su iOS:
+// I caratteri di Variation Selector (U+FE00-U+FE0F, U+FE0E) e le sequenze emoji multi-codepoint
+// causano errori nel calcolo di textAlign="center" / textAlign="right", sfasando i testi verso destra o sinistra.
+(function() {
+  const sanitize = (s) => (typeof s === "string" ? s.replace(/[\uFE00-\uFE0F\uFE0E]/g, "") : s);
+  const origFillText = CanvasRenderingContext2D.prototype.fillText;
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+    const cleanText = sanitize(text);
+    if (maxWidth !== undefined) return origFillText.call(this, cleanText, x, y, maxWidth);
+    return origFillText.call(this, cleanText, x, y);
+  };
+  const origStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+  CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+    const cleanText = sanitize(text);
+    if (maxWidth !== undefined) return origStrokeText.call(this, cleanText, x, y, maxWidth);
+    return origStrokeText.call(this, cleanText, x, y);
+  };
+  const origMeasureText = CanvasRenderingContext2D.prototype.measureText;
+  CanvasRenderingContext2D.prototype.measureText = function(text) {
+    return origMeasureText.call(this, sanitize(text));
+  };
+})();
 
 /* =========================================================================
    CONFIG — valori reali dal blocco CONFIG dell'ARCH (ARCH §3).
@@ -663,7 +686,7 @@ const MODE = { NONE: 0, QUICK: 2, EMPIRE: 1 }; // valori = DCTriangle.b (1=Empir
 // Sistema 5: nome leggibile della qualità di presa (QUALITY_* del CONFIG, SPEC §5).
 // f244b[i24]: 0=bordo, 1=medio, 2=perfetto; 3=miss (contatore errori).
 const QUALITY_NAME = {
-  [CONFIG.QUALITY_EDGE]:    "AL BORDO! ⚠️",
+  [CONFIG.QUALITY_EDGE]:    "AL BORDO! ⚠",
   [CONFIG.QUALITY_MID]:     "BUONO! 👍",
   [CONFIG.QUALITY_PERFECT]: "PERFETTO! 🌟",
   [CONFIG.QUALITY_MISS]:    "MANCATO! ❌",
@@ -1387,7 +1410,7 @@ class StateMachine {
       g.tickEnvironmentalEvents(dt);
     }
 
-    // Controllo globale tasto PAUSA [ESC] / [P] o tocco su icona ⏸️ (in alto a destra)
+    // Controllo globale tasto PAUSA [ESC] / [P] o tocco su icona ⏸ (in alto a destra)
     const inActivePlay = (this.current === S.READY || this.current === S.SWING ||
                           this.current === S.FLY   || this.current === S.LAND  ||
                           this.current === S.MISS  || this.current === S.CLIMB_DONE ||
@@ -1716,7 +1739,7 @@ class StateMachine {
                       :                                "#d50000";
 
       ctx.save();
-      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       const textMetrics = ctx.measureText(text);
       const pw = Math.max(144, Math.round(textMetrics.width + 24));
       const ph = 28;
@@ -1754,10 +1777,10 @@ class StateMachine {
     // Nome dello stato a centro schermo (solo in DEBUG)
     if (CONFIG.DEBUG) {
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(this.current, W / 2, H / 2 - 10);
       if (this.current === S.DIALOG && this.returnState) {
-        ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
         ctx.fillText("(return: " + this.returnState + ")", W / 2, H / 2 + 14);
       }
     }
@@ -1767,10 +1790,10 @@ class StateMachine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(str(2), W / 2, H / 2 - 20);
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(g.loadProgress.toFixed(0) + "%", W / 2, H / 2 + 4);
       // Barra di caricamento.
       const bw = 120, bx = (W - bw) / 2, by = H / 2 + 14;
@@ -1798,11 +1821,11 @@ class StateMachine {
       ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText("⏸️  PAUSA", W / 2, 74);
+      ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+      ctx.fillText("⏸ PAUSA", W / 2, 74);
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Punteggio: " + g.scoreDisplayed, W / 2, 102);
 
       // Pulsante 1: RIPRENDI
@@ -1815,9 +1838,11 @@ class StateMachine {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#4fc3f7";
-      ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText("▶️ RIPRENDI", W / 2, 147);
+      ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+      ctx.fillText("▶ RIPRENDI", W / 2, 147);
 
       // Pulsante 2: ESCI AL MENU
       ctx.fillStyle = "rgba(239, 83, 80, 0.20)";
@@ -1829,12 +1854,16 @@ class StateMachine {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#ef5350";
-      ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("🔙 ESCI AL MENU", W / 2, 195);
 
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#90a4ae";
-      ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Tocca i pulsanti o premi [Esc]", W / 2, 235);
     }
 
@@ -1851,11 +1880,11 @@ class StateMachine {
       ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("PYRAMID BLOXX", W / 2, 34);
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("✨ Annina & Cacao Edition ✨", W / 2, 52);
 
       const y0 = 92;
@@ -1864,7 +1893,7 @@ class StateMachine {
         const sel = (i === g.menuIndex);
         let label = g.menuItems[i];
         if (i === 2) {
-          label = "Scenario: " + (g.scenario === "palma" ? "Palma 🏖️" : (g.scenario === "bologna" ? "Bologna 🏛️" : "Montagna 🏔️"));
+          label = "Scenario: " + (g.scenario === "palma" ? "Palma 🏖" : (g.scenario === "bologna" ? "Bologna 🏛" : "Montagna 🏔"));
         }
         const rowY = y0 + i * rowStep;
         if (sel) {
@@ -1877,13 +1906,17 @@ class StateMachine {
           ctx.lineWidth = 1;
           ctx.stroke();
         }
-        ctx.font = sel ? "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                       : "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = sel ? "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif"
+                       : "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
         ctx.fillStyle = sel ? "#ffd54a" : "#cfd8dc";
         ctx.fillText(label, W / 2, rowY);
       }
 
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#80cbc4";
       ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * rowStep + 12);
     }
@@ -1903,11 +1936,11 @@ class StateMachine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("🏆 RECORD & STATISTICHE 🏆", W / 2, 20);
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic 700 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "italic 700 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("✨ Annina & Cacao Records ✨", W / 2, 35);
 
       const emp = g.stats.empire;
@@ -1925,39 +1958,40 @@ class StateMachine {
       ctx.stroke();
 
       ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#4fc3f7";
-      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText("🏛️ Costruisci la Casetta", 18, b1Y + 14);
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+      ctx.fillText("🏛 Costruisci la Casetta", 18, b1Y + 14);
 
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Miglior Punteggio:", 18, b1Y + 34);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(emp.bestScore > 0 ? String(emp.bestScore) : "—", W - 18, b1Y + 34);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Miglior Titolo:", 18, b1Y + 52);
       ctx.textAlign = "right";
       const rankStr = (emp.bestRank >= 0 && RANK_NAMES[emp.bestRank]) ? RANK_NAMES[emp.bestRank] : "—";
       ctx.fillStyle = (emp.bestRank >= 0 && RANK_COLORS[emp.bestRank]) ? RANK_COLORS[emp.bestRank] : "#cfd8dc";
-      ctx.font = "800 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(rankStr, W - 18, b1Y + 52);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Casette Finite:", 18, b1Y + 70);
       ctx.textAlign = "right";
       ctx.fillStyle = "#aed581";
-      ctx.fillText(`${emp.completedHouses} (🏔️${emp.montagnaHouses||0} 🏖️${emp.palmaHouses||0} 🏛️${emp.bolognaHouses||0})`, W - 18, b1Y + 70);
+      ctx.fillText(`${emp.completedHouses} (🏔${emp.montagnaHouses||0} 🏖${emp.palmaHouses||0} 🏛${emp.bolognaHouses||0})`, W - 18, b1Y + 70);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Miglior Tempo:", 18, b1Y + 88);
       ctx.textAlign = "right";
       ctx.fillStyle = "#80cbc4";
@@ -1970,7 +2004,7 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Max Perfetti:", 18, b1Y + 104);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
@@ -1989,34 +2023,34 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("⚡ Scalata Rapida (Quick)", 18, b2Y + 14);
 
       ctx.textAlign = "left";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Record Punteggio:", 18, b2Y + 35);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(qk.highScore > 0 ? String(qk.highScore) : "—", W - 18, b2Y + 35);
 
       ctx.textAlign = "left";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Piani Scalati Record:", 18, b2Y + 54);
       ctx.textAlign = "right";
       ctx.fillStyle = "#fff59d";
-      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(qk.maxFloors > 0 ? (qk.maxFloors + " Piani") : "—", W - 18, b2Y + 54);
 
       ctx.textAlign = "left";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Combo Massima:", 18, b2Y + 73);
       ctx.textAlign = "right";
       ctx.fillStyle = "#aed581";
-      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(qk.maxCombo > 0 ? ("x" + qk.maxCombo) : "—", W - 18, b2Y + 73);
 
       // Pulsante torna indietro
@@ -2032,7 +2066,7 @@ class StateMachine {
       ctx.stroke();
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("🔙 TORNA AL MENU", W / 2, H - 24);
     }
 
@@ -2049,14 +2083,14 @@ class StateMachine {
       ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("COME TI SENTI OGGI", W / 2, 38);
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("ANNINA? ✨", W / 2, 54);
 
       ctx.fillStyle = "#b0bec5";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Scegli la tua colonna sonora:", W / 2, 75);
 
       const items = [
@@ -2084,8 +2118,10 @@ class StateMachine {
           ctx.stroke();
         }
 
-        ctx.font = sel ? "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-                       : "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = sel ? "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif"
+                       : "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
         ctx.fillStyle = isActive ? "#aed581" : (sel ? "#ffd54a" : "#cfd8dc");
         
         let text = `${item.icon} ${item.label}`;
@@ -2093,7 +2129,9 @@ class StateMachine {
         ctx.fillText(text, W / 2, y0 + i * 26);
       }
 
-      ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#90a4ae";
       ctx.fillText("Inserisci i tuoi brani in assets/audio/", W / 2, H - 24);
       ctx.fillText("baddie.mp3 / cattiva.mp3 / espanol.mp3", W / 2, H - 12);
@@ -2117,11 +2155,11 @@ class StateMachine {
       ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText("❤️ Per la mia Annina ❤️", W / 2, 54);
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
+      ctx.fillText("💖 Per la mia Annina 💖", W / 2, 54);
 
       ctx.fillStyle = "#eceff1";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       const lines = [
         "Questo gioco è fatto",
         "apposta per te,",
@@ -2131,14 +2169,16 @@ class StateMachine {
         "Insieme a te e al tuo",
         "fedele Cacao 🐕",
         "costruirete tra le Montagne,",
-        "Palma e sotto i Portici! 🏛️",
+        "Palma e sotto i Portici! 🏛",
         "",
-        "da Ale❤️ per Anna❤️",
+        "da Ale💖 per Anna💖",
         "",
         "Tocca lo schermo",
         "per continuare ✨"
       ];
       for (let l = 0; l < lines.length; l++) {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.fillText(lines[l], W / 2, 80 + l * 14);
       }
     }
@@ -2147,17 +2187,18 @@ class StateMachine {
     if (this.current === S.CLIMB_DONE) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#ffd54a";
       ctx.fillText("✨ Scalata Completata! ✨", W / 2, H / 2 + 16);
-      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       if (g.mode === MODE.EMPIRE) {
         const q = g.pieceQuality();
         ctx.fillStyle = CONFIG.HOUSE_QUALITY_COLORS[q];
         ctx.fillText("Pezzo " + CONFIG.HOUSE_QUALITY_NAMES[q] +
                      " (x" + CONFIG.HOUSE_QUALITY_MULT[q] + ")",
                      W / 2, H / 2 + 34);
-        ctx.fillStyle = "#cfd8dc"; ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillStyle = "#cfd8dc";
+        ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
         ctx.fillText(g.house.nextDef ? "In consegna: " + g.house.nextDef.label : "",
                      W / 2, H / 2 + 50);
       }
@@ -2173,27 +2214,29 @@ class StateMachine {
 
       let y = 50;
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("🎉 VITTORIA! 🎉", W / 2, y); y += 18;
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Casetta Completata!", W / 2, y); y += 26;
 
       if (g.mode === MODE.EMPIRE) {
         ctx.fillStyle = RANK_COLORS[g.rank] || "#aed581";
-        ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
         for (const ln of wrapText(ctx, RANK_NAMES[g.rank] || "Grande Architetto!", W - 30)) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
           ctx.fillText(ln, W / 2, y); y += 13;
         }
         y += 10;
       }
 
       ctx.fillStyle = "#fff";
-      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Punteggio Totale: " + g.scoreDisplayed, W / 2, y); y += 20;
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Combo Massima: x" + g.comboMax, W / 2, y); y += 15;
       ctx.fillText("Tempo Bonus: +" + g.timeBonus(), W / 2, y); y += 15;
 
@@ -2204,7 +2247,7 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Tocca o premi Spazio per il Menu", W / 2, H - 24);
     }
 
@@ -2218,23 +2261,23 @@ class StateMachine {
 
       let y = 60;
       ctx.fillStyle = "#ef5350";
-      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("💔 PARTITA TERMINATA 💔", W / 2, y); y += 22;
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Il blocco è caduto troppe volte!", W / 2, y); y += 28;
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Punteggio Finale: " + g.scoreDisplayed, W / 2, y); y += 20;
 
       ctx.fillStyle = "#80cbc4";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Miglior Record: " + g.highScore, W / 2, y); y += 30;
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("Tocca o premi Spazio per Riprovare", W / 2, H - 24);
     }
 
@@ -2285,11 +2328,11 @@ class StateMachine {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
     ctx.fillStyle = g.banner.color || "#ffd54a";
     ctx.fillText(g.banner.title, W / 2, by + 11);
 
-    ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
     ctx.fillStyle = "#e0e0e0";
     ctx.fillText(g.banner.subtitle, W / 2, by + 24);
 
@@ -2311,13 +2354,13 @@ class StateMachine {
     // Punteggio, a sinistra.
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffd54a";
-    ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
     ctx.fillText(String(g.scoreDisplayed), 6, 11);
 
     // Combo attiva
     if (g.combo > 1 && g.comboTimer > 0) {
       ctx.fillStyle = "#aed581";
-      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText("x" + g.combo, 6 + ctx.measureText(String(g.scoreDisplayed)).width + 6, 11);
     }
 
@@ -2331,18 +2374,18 @@ class StateMachine {
         label = `🌋 SISMA ${remSec}s`;
         bCol = "#ff5252";
       } else if (ev.type === "wind") {
-        label = `💨 ${(ev.dir > 0 ? "VENTO ➡️" : "VENTO ⬅️")} ${remSec}s`;
+        label = `💨 ${(ev.dir > 0 ? "VENTO ➡" : "VENTO ⬅")} ${remSec}s`;
         bCol = "#40c4ff";
       } else if (ev.type === "blizzard") {
-        label = `❄️ ${(ev.dir > 0 ? "BUFERA ➡️" : "BUFERA ⬅️")} ${remSec}s`;
+        label = `❄ ${(ev.dir > 0 ? "BUFERA ➡" : "BUFERA ⬅")} ${remSec}s`;
         bCol = "#80d8ff";
       } else if (ev.type === "fog") {
-        label = `🌫️ ${(ev.dir > 0 ? "NEBBIA ➡️" : "NEBBIA ⬅️")} ${remSec}s`;
+        label = `🌫 ${(ev.dir > 0 ? "NEBBIA ➡" : "NEBBIA ⬅")} ${remSec}s`;
         bCol = "#cfd8dc";
       }
 
       ctx.save();
-      ctx.font = "800 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "800 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       const tw = ctx.measureText(label).width;
       const pw = tw + 8;
       const px = Math.round((W - pw) / 2);
@@ -2384,7 +2427,7 @@ class StateMachine {
       const s = Math.ceil(left / 1000);
       ctx.textAlign = "right";
       ctx.fillStyle = left > 0 ? "#cfd8dc" : "#ef5350";
-      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillText(Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"), btnX - 6, 11);
     }
 
@@ -3492,7 +3535,7 @@ class MountainHouse {
       ctx.lineWidth = 1;
       ctx.strokeRect(8, H - 38, W - 16, 32);
 
-      const title = isPalma ? "CHIRINGUITO A PALMA 🏖️" : isBologna ? "PALAZZINA A BOLOGNA 🏛️" : "CHALET ALPINO DI ANNINA 🏔️";
+      const title = isPalma ? "CHIRINGUITO A PALMA 🏖" : isBologna ? "PALAZZINA A BOLOGNA 🏛" : "CHALET ALPINO DI ANNINA 🏔";
       ctx.fillStyle = isPalma ? "#ffe082" : isBologna ? "#ffcc80" : "#ff80ab";
       ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
       ctx.fillText(title + " (" + this.placed.length + "/" + CONFIG.HOUSE_PIECES.length + ")", W / 2, H - 24);
@@ -3956,10 +3999,10 @@ class Game {
     this.menuItems = [
       "Scalata Rapida (Quick)",
       "Costruisci la Casetta (Empire)",
-      "Scenario: " + (this.scenario === "palma" ? "Palma 🏖️" : this.scenario === "bologna" ? "Bologna 🏛️" : "Montagna 🏔️"),
+      "Scenario: " + (this.scenario === "palma" ? "Palma 🏖" : this.scenario === "bologna" ? "Bologna 🏛" : "Montagna 🏔"),
       "Record & Statistiche 🏆",
       "Musica & Mood di Annina 🎧",
-      "Dedica per Annina ❤️"
+      "Dedica per Annina 💖"
     ];
     this.menuIndex = 0;
 
@@ -4208,31 +4251,31 @@ class Game {
         const durSec = Math.round(this.envEvent.duration / 1000);
         if (this.envEvent.type === "earthquake") {
           this.banner = {
-            title: "⚠️ ALLERTA TERREMOTO! 🌋",
+            title: "⚠ ALLERTA TERREMOTO! 🌋",
             subtitle: `Scosse sismiche improvvise! (${durSec}s)`,
             color: "#ff5252",
             timer: 2400,
           };
         } else if (this.envEvent.type === "wind") {
-          const dirText = this.envEvent.dir > 0 ? "➡️ (verso DX)" : "⬅️ (verso SX)";
+          const dirText = this.envEvent.dir > 0 ? "➡ (verso DX)" : "⬅ (verso SX)";
           this.banner = {
-            title: "💨 VENTO FORTE " + (this.envEvent.dir > 0 ? "➡️" : "⬅️"),
+            title: "💨 VENTO FORTE " + (this.envEvent.dir > 0 ? "➡" : "⬅"),
             subtitle: `Raffiche improvvise ${dirText}! (${durSec}s)`,
             color: "#40c4ff",
             timer: 2400,
           };
         } else if (this.envEvent.type === "blizzard") {
-          const dirText = this.envEvent.dir > 0 ? "➡️ (verso DX)" : "⬅️ (verso SX)";
+          const dirText = this.envEvent.dir > 0 ? "➡ (verso DX)" : "⬅ (verso SX)";
           this.banner = {
-            title: "❄️ BUFERA DI NEVE " + (this.envEvent.dir > 0 ? "➡️" : "⬅️"),
+            title: "❄ BUFERA DI NEVE " + (this.envEvent.dir > 0 ? "➡" : "⬅"),
             subtitle: `Tormenta improvvisa ${dirText}! (${durSec}s)`,
             color: "#80d8ff",
             timer: 2400,
           };
         } else if (this.envEvent.type === "fog") {
-          const dirText = this.envEvent.dir > 0 ? "➡️ (verso DX)" : "⬅️ (verso SX)";
+          const dirText = this.envEvent.dir > 0 ? "➡ (verso DX)" : "⬅ (verso SX)";
           this.banner = {
-            title: "🌫️ NEBBIONE BOLOGNESE " + (this.envEvent.dir > 0 ? "➡️" : "⬅️"),
+            title: "🌫 NEBBIONE BOLOGNESE " + (this.envEvent.dir > 0 ? "➡" : "⬅"),
             subtitle: `Fitta nebbia in quota ${dirText}! (${durSec}s)`,
             color: "#cfd8dc",
             timer: 2400,
@@ -4249,7 +4292,7 @@ class Game {
         this.envEvent = null;
         this.quickCooldown = 8000 + Math.random() * 8000;
         this.banner = {
-          title: "☀️ TORNA IL SERENO",
+          title: "☀ TORNA IL SERENO",
           subtitle: "L'evento speciale è terminato!",
           color: "#aed581",
           timer: 1600,
