@@ -1439,12 +1439,12 @@ class StateMachine {
       // --- MENU: navigazione (su/giù) + comando d'azione / touch diretto ---
       case S.MENU: {
         const n = g.menuItems.length;
-        const y0 = 92;
-        const rowStep = 24;
+        const y0 = 74;
+        const rowStep = 22;
         if (inp.lastClicked) {
           for (let i = 0; i < n; i++) {
             const rowY = y0 + i * rowStep;
-            if (inp.lastPointerY >= rowY - 12 && inp.lastPointerY <= rowY + 12) {
+            if (inp.lastPointerY >= rowY - 11 && inp.lastPointerY <= rowY + 11) {
               g.menuIndex = i;
               this.fire(g.menuIndex);
               return;
@@ -1867,7 +1867,7 @@ class StateMachine {
       ctx.fillText("Tocca i pulsanti o premi [Esc]", W / 2, 235);
     }
 
-    // MENU — titolo, voci navigabili, record.
+    // MENU — titolo, voci navigabili, record, Anna e Cacao pixel art sul fondo
     if (this.current === S.MENU) {
       const bg = (g.scenario === 'palma') ? Assets.custom.bgPalma : (g.scenario === 'bologna') ? Assets.custom.bgBologna : Assets.custom.bgMontagna;
       if (bg && bg.complete && bg.naturalWidth > 0) {
@@ -1881,14 +1881,14 @@ class StateMachine {
 
       ctx.fillStyle = "#ffd54a";
       ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
-      ctx.fillText("PYRAMID BLOXX", W / 2, 34);
+      ctx.fillText("PYRAMID BLOXX", W / 2, 28);
 
       ctx.fillStyle = "#ff80ab";
       ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
-      ctx.fillText("✨ Annina & Cacao Edition ✨", W / 2, 52);
+      ctx.fillText("✨ Annina & Cacao Edition ✨", W / 2, 45);
 
-      const y0 = 92;
-      const rowStep = 24;
+      const y0 = 74;
+      const rowStep = 22;
       for (let i = 0; i < g.menuItems.length; i++) {
         const sel = (i === g.menuIndex);
         let label = g.menuItems[i];
@@ -1899,8 +1899,8 @@ class StateMachine {
         if (sel) {
           ctx.fillStyle = "rgba(255, 213, 74, 0.25)";
           ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(12, rowY - 11, W - 24, 22, 6);
-          else ctx.rect(12, rowY - 11, W - 24, 22);
+          if (ctx.roundRect) ctx.roundRect(12, rowY - 10, W - 24, 20, 6);
+          else ctx.rect(12, rowY - 10, W - 24, 20);
           ctx.fill();
           ctx.strokeStyle = "#ffd54a";
           ctx.lineWidth = 1;
@@ -1918,7 +1918,39 @@ class StateMachine {
       ctx.textBaseline = "middle";
       ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";
       ctx.fillStyle = "#80cbc4";
-      ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * rowStep + 12);
+      ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * rowStep + 10);
+
+      // Personaggi Pixel Art di Anna e Cacao poggiati sul fondo
+      const fAnim = Math.floor(Date.now() / 200) % 4;
+      const imCacao = (Assets.custom.cacaoSit && Assets.custom.cacaoSit[fAnim]) ||
+                      (Assets.custom.cacaoWait && Assets.custom.cacaoWait[fAnim]) ||
+                      (Assets.custom.cacaoSit && Assets.custom.cacaoSit[0]);
+      const imAnna = Assets.custom.annaWait || Assets.custom.annaCheer;
+
+      const groundY = H;
+      const cacaoW = 44, cacaoH = 32;
+      const cacaoX = 58, cacaoY = groundY - cacaoH;
+
+      const annaW = 34, annaH = 44;
+      const annaX = 138, annaY = groundY - annaH;
+
+      // Ombre morbide sul pavimento
+      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+      ctx.beginPath();
+      ctx.ellipse(cacaoX + cacaoW / 2, groundY - 2, cacaoW * 0.42, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(annaX + annaW / 2, groundY - 2, annaW * 0.38, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Disegno Cacao e Anna
+      if (imCacao && imCacao.complete && imCacao.naturalWidth > 0) {
+        ctx.drawImage(imCacao, cacaoX, cacaoY, cacaoW, cacaoH);
+      }
+      if (imAnna && imAnna.complete && imAnna.naturalWidth > 0) {
+        ctx.drawImage(imAnna, annaX, annaY, annaW, annaH);
+      }
     }
 
     // RECORDS — Sala dei Record e Statistiche
