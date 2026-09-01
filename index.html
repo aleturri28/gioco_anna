@@ -19,7 +19,8 @@
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
-    touch-action: manipulation;
+    touch-action: none;
+    overscroll-behavior: none;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
@@ -27,149 +28,197 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, #181d26 0%, #090c10 100%);
+    background: radial-gradient(circle at center, #181d26 0%, #080a0e 100%);
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   }
 
-  /* Contenitore principale del gioco */
+  /* Contenitore Principale Arcade Frame */
   .game-wrapper {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     width: 100%;
     height: 100%;
     max-height: 100dvh;
-    padding: 0;
+    max-width: 520px;
+    padding: 8px 12px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
-  /* Cornice Arcade su Desktop (> 680px) */
-  @media (min-width: 681px) {
+  /* Cornice Arcade su Desktop / Tablet Widescreen (> 768px) */
+  @media (min-width: 769px) {
     .game-wrapper {
-      width: auto;
       height: 94dvh;
       max-height: 860px;
+      width: auto;
       aspect-ratio: 3 / 4;
+      max-width: 620px;
       padding: 14px 18px 12px 18px;
-      background: linear-gradient(160deg, #202630 0%, #12151b 100%);
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85),
-                  0 0 45px rgba(255, 128, 171, 0.14),
-                  inset 0 1px 1px rgba(255, 255, 255, 0.25);
-    }
-
-    .frame-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      margin-bottom: 8px;
-      padding: 0 2px;
-    }
-
-    .frame-title {
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.8px;
-      color: #ffd54a;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-    }
-
-    .frame-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 10px;
-      background: rgba(255, 128, 171, 0.18);
-      color: #ff80ab;
-      border: 1px solid rgba(255, 128, 171, 0.35);
-    }
-
-    .frame-footer {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      margin-top: 8px;
-      font-size: 11px;
-      color: #8b949e;
-      font-weight: 500;
-      letter-spacing: 0.2px;
-    }
-
-    .frame-footer kbd {
-      background: #21262d;
-      border: 1px solid #30363d;
-      border-radius: 4px;
-      padding: 2px 5px;
-      font-size: 10px;
-      color: #ffd54a;
-      font-family: monospace;
-      font-weight: 600;
+      background: linear-gradient(165deg, #222936 0%, #11141a 100%);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9),
+                  0 0 50px rgba(255, 128, 171, 0.16),
+                  inset 0 1px 1px rgba(255, 255, 255, 0.3);
     }
   }
 
-  /* Su Mobile (<= 680px): A tutto schermo senza cornice */
-  @media (max-width: 680px) {
-    .frame-header, .frame-footer {
-      display: none !important;
-    }
-    .game-wrapper {
-      padding: 0;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-      width: 100vw;
-      height: 100dvh;
-      max-height: 100dvh;
-    }
+  /* Header Component (Sia Mobile che Desktop) */
+  .frame-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 12px;
+    margin-bottom: 6px;
+    background: rgba(22, 28, 38, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    flex-shrink: 0;
   }
 
-  /* Canvas di Gioco Responsive */
+  .frame-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #ffd54a;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+
+  .frame-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255, 128, 171, 0.20);
+    color: #ff80ab;
+    border: 1px solid rgba(255, 128, 171, 0.40);
+    text-shadow: 0 0 8px rgba(255, 128, 171, 0.5);
+  }
+
+  /* Canvas Container — Centratura perfetta con rapporto 3:4 rigoroso */
   .canvas-container {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 1;
+    flex: 1 1 0;
     width: 100%;
     height: 100%;
     min-height: 0;
+    min-width: 0;
+    overflow: hidden;
   }
 
   canvas#game {
     display: block;
     background: #000;
-    aspect-ratio: 3 / 4;
-    max-height: 100%;
-    max-width: 100%;
-    width: auto;
-    height: 100%;
-    object-fit: contain;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 213, 74, 0.35);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 128, 171, 0.18);
+    touch-action: none;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
     image-rendering: pixelated;
-    touch-action: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    flex-shrink: 0;
   }
 
-  @media (max-width: 680px) {
-    canvas#game {
-      border-radius: 0;
-      box-shadow: none;
-      width: auto;
-      height: 100%;
-      max-width: 100vw;
-      max-height: 100dvh;
+  /* Footer per Desktop */
+  .frame-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #8b949e;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    flex-shrink: 0;
+  }
+
+  .frame-footer kbd {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    color: #ffd54a;
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  /* Barra Azioni Touch su Mobile */
+  .mobile-action-bar {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 4px 2px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .frame-footer {
+      display: none;
     }
+    .mobile-action-bar {
+      display: flex;
+    }
+  }
+
+  .mobile-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .mobile-btn:active {
+    transform: scale(0.95);
+  }
+
+  .mobile-btn-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    background: rgba(30, 36, 48, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #ffd54a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .mobile-btn-action {
+    flex: 1;
+    height: 44px;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, rgba(255, 213, 74, 0.22) 0%, rgba(255, 128, 171, 0.22) 100%), #1c222e;
+    border: 1px solid rgba(255, 213, 74, 0.5);
+    color: #ffd54a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 213, 74, 0.15);
+    gap: 6px;
   }
 </style>
 </head>
@@ -188,6 +237,13 @@
     <span><kbd>↑</kbd><kbd>↓</kbd> Menu</span>
     <span>•</span>
     <span><kbd>ESC</kbd> Pausa</span>
+  </div>
+  <div class="mobile-action-bar">
+    <button id="btn-pause-mobile" class="mobile-btn mobile-btn-icon" aria-label="Pausa">⏸️</button>
+    <button id="btn-action-mobile" class="mobile-btn mobile-btn-action">
+      <span>🚀 LANCIA / AZIONE</span>
+    </button>
+    <button id="btn-audio-mobile" class="mobile-btn mobile-btn-icon" aria-label="Audio">🎵</button>
   </div>
 </div>
 <script>
@@ -908,16 +964,66 @@ class InputManager {
       const a = KEY_MAP[e.key];
       if (a) { this._push(a); e.preventDefault(); }
     });
-    canvas.addEventListener("pointerdown", (e) => {
+
+    const handleCanvasPointer = (e) => {
       const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
       const scaleX = 240 / rect.width;
       const scaleY = 320 / rect.height;
       this.pointerX = (e.clientX - rect.left) * scaleX;
       this.pointerY = (e.clientY - rect.top) * scaleY;
       this.pointerClicked = true;
       this._push(ACT.ACTION);
+      if (navigator.vibrate) {
+        try { navigator.vibrate(10); } catch (err) {}
+      }
       e.preventDefault();
-    });
+    };
+
+    canvas.addEventListener("pointerdown", handleCanvasPointer);
+
+    // Mobile Action Launch Button
+    const actionBtn = document.getElementById("btn-action-mobile");
+    if (actionBtn) {
+      actionBtn.addEventListener("pointerdown", (e) => {
+        this.pointerClicked = true;
+        this.pointerX = 120;
+        this.pointerY = 160;
+        this._push(ACT.ACTION);
+        if (navigator.vibrate) {
+          try { navigator.vibrate(12); } catch (err) {}
+        }
+        e.preventDefault();
+      });
+    }
+
+    // Mobile Pause Button
+    const pauseBtn = document.getElementById("btn-pause-mobile");
+    if (pauseBtn) {
+      pauseBtn.addEventListener("pointerdown", (e) => {
+        this._push(ACT.PAUSE);
+        e.preventDefault();
+      });
+    }
+
+    // Mobile Audio Mood / Mute Button
+    const audioBtn = document.getElementById("btn-audio-mobile");
+    if (audioBtn) {
+      audioBtn.addEventListener("pointerdown", (e) => {
+        if (typeof game !== "undefined" && game && game.sm) {
+          if (game.sm.current === S.AUDIO_MENU) {
+            game.sm.fire(0); // Torna al menu
+          } else if (game.sm.current === S.MENU) {
+            game.sm.current = S.AUDIO_MENU;
+            game.sm.dwell = 0;
+          } else {
+            // Durante la partita: rapido toggle mute
+            game.audio.setMuted(!game.audio.muted);
+          }
+        }
+        e.preventDefault();
+      });
+    }
   }
 
   poll() {
@@ -4443,38 +4549,44 @@ class Game {
 function fitGameToScreen() {
   const canvas = document.getElementById("game");
   if (!canvas) return;
-  const container = canvas.parentElement;
+  const container = canvas.parentElement || document.querySelector(".canvas-container");
   if (!container) return;
   const rect = container.getBoundingClientRect();
-  const availableW = rect.width;
-  const availableH = rect.height;
+  const availableW = Math.floor(rect.width);
+  const availableH = Math.floor(rect.height);
   if (availableW <= 0 || availableH <= 0) return;
 
-  const targetRatio = 3 / 4;
-  let finalW, finalH;
+  // Strict 3:4 Aspect Ratio (240 / 320 = 0.75)
+  let targetW = availableW;
+  let targetH = Math.floor(targetW * (4 / 3));
 
-  if (availableW / availableH > targetRatio) {
-    // Schermo più largo del 3:4 (widescreen desktop o landscape)
-    finalH = availableH;
-    finalW = finalH * targetRatio;
-  } else {
-    // Schermo più alto del 3:4 (smartphone portrait es. iPhone SE, iPhone 13)
-    finalW = availableW;
-    finalH = finalW / targetRatio;
-    if (finalH > availableH) {
-      finalH = availableH;
-      finalW = finalH * targetRatio;
-    }
+  if (targetH > availableH) {
+    targetH = availableH;
+    targetW = Math.floor(targetH * (3 / 4));
   }
 
-  canvas.style.width = Math.floor(finalW) + "px";
-  canvas.style.height = Math.floor(finalH) + "px";
+  targetW = Math.max(120, targetW);
+  targetH = Math.max(160, targetH);
+
+  canvas.style.width = targetW + "px";
+  canvas.style.height = targetH + "px";
 }
 
+if (typeof window.ResizeObserver !== "undefined") {
+  const container = document.querySelector(".canvas-container");
+  if (container) {
+    new ResizeObserver(() => fitGameToScreen()).observe(container);
+  }
+}
 window.addEventListener("resize", fitGameToScreen);
-window.addEventListener("orientationchange", () => setTimeout(fitGameToScreen, 120));
+window.addEventListener("orientationchange", () => {
+  setTimeout(fitGameToScreen, 60);
+  setTimeout(fitGameToScreen, 150);
+});
 window.addEventListener("DOMContentLoaded", fitGameToScreen);
-setTimeout(fitGameToScreen, 50);
+setTimeout(fitGameToScreen, 20);
+setTimeout(fitGameToScreen, 100);
+setTimeout(fitGameToScreen, 300);
 
 /* ---- bootstrap ---- */
 const game = new Game(document.getElementById("game"));
