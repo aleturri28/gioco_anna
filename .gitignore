@@ -1,0 +1,18 @@
+# Materiale di sviluppo e archivio non necessario alla pubblicazione
+add_inutile/
+
+# File di sistema macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configurazione IDE / Assistenti
+.claude/
+.idea/
+.vscode/
