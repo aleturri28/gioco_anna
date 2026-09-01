@@ -1412,11 +1412,12 @@ class StateMachine {
       // --- MENU: navigazione (su/giù) + comando d'azione / touch diretto ---
       case S.MENU: {
         const n = g.menuItems.length;
-        const y0 = 98;
+        const y0 = 92;
+        const rowStep = 24;
         if (inp.lastClicked) {
           for (let i = 0; i < n; i++) {
-            const rowY = y0 + i * 23;
-            if (inp.lastPointerY >= rowY - 11 && inp.lastPointerY <= rowY + 11) {
+            const rowY = y0 + i * rowStep;
+            if (inp.lastPointerY >= rowY - 12 && inp.lastPointerY <= rowY + 12) {
               g.menuIndex = i;
               this.fire(g.menuIndex);
               return;
@@ -1569,11 +1570,11 @@ class StateMachine {
       // --- PAUSE: azione = riprendi (stato salvato); back = esci al menu ---
       case S.PAUSE: {
         if (inp.lastClicked) {
-          if (inp.lastPointerY >= 140 && inp.lastPointerY <= 178) {
+          if (inp.lastPointerY >= 125 && inp.lastPointerY <= 165) {
             this.fire(0); // riprendi -> returnState
             return;
           }
-          if (inp.lastPointerY >= 185 && inp.lastPointerY <= 225) {
+          if (inp.lastPointerY >= 172 && inp.lastPointerY <= 215) {
             this.fire(1); // esci -> MENU
             return;
           }
@@ -1711,15 +1712,15 @@ class StateMachine {
                       :                                "#d50000";
 
       ctx.save();
-      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       const textMetrics = ctx.measureText(text);
-      const pw = Math.max(140, textMetrics.width + 28);
-      const ph = 30;
+      const pw = Math.max(144, Math.round(textMetrics.width + 24));
+      const ph = 28;
       const px = Math.round((W - pw) / 2);
       const py = 26;
 
       // Dark translucent pill with colored border
-      ctx.fillStyle = "rgba(10, 14, 24, 0.88)";
+      ctx.fillStyle = "rgba(10, 14, 24, 0.92)";
       ctx.beginPath();
       if (ctx.roundRect) {
         ctx.roundRect(px, py, pw, ph, 8);
@@ -1728,21 +1729,11 @@ class StateMachine {
       }
       ctx.fill();
       ctx.strokeStyle = borderCol;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Text with drop shadow and outline for ultra readability
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.shadowColor = "#000";
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 2;
-
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "#000";
-      ctx.strokeText(text, W / 2, py + ph / 2);
-
       ctx.fillStyle = col;
       ctx.fillText(text, W / 2, py + ph / 2);
       ctx.restore();
@@ -1759,21 +1750,23 @@ class StateMachine {
     // Nome dello stato a centro schermo (solo in DEBUG)
     if (CONFIG.DEBUG) {
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 20px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(this.current, W / 2, H / 2 - 10);
       if (this.current === S.DIALOG && this.returnState) {
-        ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
+        ctx.font = "11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         ctx.fillText("(return: " + this.returnState + ")", W / 2, H / 2 + 14);
       }
     }
 
     // BOOT — logo e avanzamento del caricamento
     if (this.current === S.BOOT) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(str(2), W / 2, H / 2 - 20);
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(g.loadProgress.toFixed(0) + "%", W / 2, H / 2 + 4);
       // Barra di caricamento.
       const bw = 120, bx = (W - bw) / 2, by = H / 2 + 14;
@@ -1789,47 +1782,56 @@ class StateMachine {
       ctx.fillRect(0, 0, W, H);
 
       ctx.fillStyle = "#1b2028";
-      ctx.fillRect(20, 50, W - 40, H - 100);
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(20, 48, W - 40, H - 96, 12);
+      else ctx.rect(20, 48, W - 40, H - 96);
+      ctx.fill();
       ctx.strokeStyle = "#ffd54a";
       ctx.lineWidth = 2;
-      ctx.strokeRect(20, 50, W - 40, H - 100);
+      ctx.stroke();
 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 16px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("⏸️ PAUSA", W / 2, 75);
+      ctx.font = "800 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("⏸️  PAUSA", W / 2, 74);
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("Punteggio: " + g.scoreDisplayed, W / 2, 105);
+      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("Punteggio: " + g.scoreDisplayed, W / 2, 102);
 
       // Pulsante 1: RIPRENDI
-      ctx.fillStyle = "rgba(79, 195, 247, 0.25)";
-      ctx.fillRect(32, 135, W - 64, 30);
+      ctx.fillStyle = "rgba(79, 195, 247, 0.22)";
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(32, 130, W - 64, 34, 8);
+      else ctx.rect(32, 130, W - 64, 34);
+      ctx.fill();
       ctx.strokeStyle = "#4fc3f7";
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(32, 135, W - 64, 30);
+      ctx.stroke();
 
       ctx.fillStyle = "#4fc3f7";
-      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("▶️ RIPRENDI", W / 2, 150);
+      ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("▶️ RIPRENDI", W / 2, 147);
 
       // Pulsante 2: ESCI AL MENU
-      ctx.fillStyle = "rgba(239, 83, 80, 0.2)";
-      ctx.fillRect(32, 180, W - 64, 30);
+      ctx.fillStyle = "rgba(239, 83, 80, 0.20)";
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(32, 178, W - 64, 34, 8);
+      else ctx.rect(32, 178, W - 64, 34);
+      ctx.fill();
       ctx.strokeStyle = "#ef5350";
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(32, 180, W - 64, 30);
+      ctx.stroke();
 
       ctx.fillStyle = "#ef5350";
-      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("🔙 ESCI AL MENU", W / 2, 195);
 
       ctx.fillStyle = "#90a4ae";
-      ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("Tocca i tasti o premi [Esc]", W / 2, 235);
+      ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("Tocca i pulsanti o premi [Esc]", W / 2, 235);
     }
 
     // MENU — titolo, voci navigabili, record.
@@ -1841,35 +1843,45 @@ class StateMachine {
         ctx.fillRect(0, 0, W, H);
       }
 
-      ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("PYRAMID BLOXX", W / 2, 36);
-      ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("✨ Annina & Cacao Edition ✨", W / 2, 54);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-      const y0 = 98;
-      ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.fillStyle = "#ffd54a";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("PYRAMID BLOXX", W / 2, 34);
+
+      ctx.fillStyle = "#ff80ab";
+      ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("✨ Annina & Cacao Edition ✨", W / 2, 52);
+
+      const y0 = 92;
+      const rowStep = 24;
       for (let i = 0; i < g.menuItems.length; i++) {
         const sel = (i === g.menuIndex);
         let label = g.menuItems[i];
         if (i === 2) {
           label = "Scenario: " + (g.scenario === "palma" ? "Palma 🏖️" : (g.scenario === "bologna" ? "Bologna 🏛️" : "Montagna 🏔️"));
         }
+        const rowY = y0 + i * rowStep;
         if (sel) {
           ctx.fillStyle = "rgba(255, 213, 74, 0.25)";
-          ctx.fillRect(10, y0 + i * 23 - 10, W - 20, 20);
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(12, rowY - 11, W - 24, 22, 6);
+          else ctx.rect(12, rowY - 11, W - 24, 22);
+          ctx.fill();
           ctx.strokeStyle = "#ffd54a";
           ctx.lineWidth = 1;
-          ctx.strokeRect(10, y0 + i * 23 - 10, W - 20, 20);
+          ctx.stroke();
         }
+        ctx.font = sel ? "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                       : "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         ctx.fillStyle = sel ? "#ffd54a" : "#cfd8dc";
-        ctx.fillText(label, W / 2, y0 + i * 23);
+        ctx.fillText(label, W / 2, rowY);
       }
 
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#80cbc4";
-      ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * 23 + 14);
+      ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * rowStep + 12);
     }
 
     // RECORDS — Sala dei Record e Statistiche
@@ -1887,11 +1899,11 @@ class StateMachine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 13px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("🏆 RECORD & STATISTICHE 🏆", W / 2, 20);
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "italic 700 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("✨ Annina & Cacao Records ✨", W / 2, 35);
 
       const emp = g.stats.empire;
@@ -1900,37 +1912,40 @@ class StateMachine {
       // Box 1: Casetta Empire
       const b1Y = 48, b1H = 118;
       ctx.fillStyle = "rgba(16, 28, 45, 0.75)";
-      ctx.fillRect(10, b1Y, W - 20, b1H);
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(10, b1Y, W - 20, b1H, 8);
+      else ctx.rect(10, b1Y, W - 20, b1H);
+      ctx.fill();
       ctx.strokeStyle = "#4fc3f7";
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(10, b1Y, W - 20, b1H);
+      ctx.stroke();
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#4fc3f7";
-      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("🏛️ Costruisci la Casetta", 18, b1Y + 14);
 
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Miglior Punteggio:", 18, b1Y + 34);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(emp.bestScore > 0 ? String(emp.bestScore) : "—", W - 18, b1Y + 34);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Miglior Titolo:", 18, b1Y + 52);
       ctx.textAlign = "right";
       const rankStr = (emp.bestRank >= 0 && RANK_NAMES[emp.bestRank]) ? RANK_NAMES[emp.bestRank] : "—";
       ctx.fillStyle = (emp.bestRank >= 0 && RANK_COLORS[emp.bestRank]) ? RANK_COLORS[emp.bestRank] : "#cfd8dc";
-      ctx.font = "bold 9px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(rankStr, W - 18, b1Y + 52);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Casette Finite:", 18, b1Y + 70);
       ctx.textAlign = "right";
       ctx.fillStyle = "#aed581";
@@ -1938,7 +1953,7 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Miglior Tempo:", 18, b1Y + 88);
       ctx.textAlign = "right";
       ctx.fillStyle = "#80cbc4";
@@ -1951,7 +1966,7 @@ class StateMachine {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Max Perfetti:", 18, b1Y + 104);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
@@ -1960,32 +1975,35 @@ class StateMachine {
       // Box 2: Scalata Rapida
       const b2Y = 174, b2H = 92;
       ctx.fillStyle = "rgba(45, 18, 35, 0.75)";
-      ctx.fillRect(10, b2Y, W - 20, b2H);
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(10, b2Y, W - 20, b2H, 8);
+      else ctx.rect(10, b2Y, W - 20, b2H);
+      ctx.fill();
       ctx.strokeStyle = "#ff80ab";
       ctx.lineWidth = 1.5;
       ctx.strokeRect(10, b2Y, W - 20, b2H);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("⚡ Scalata Rapida (Quick)", 18, b2Y + 14);
 
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Record Punteggio:", 18, b2Y + 35);
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(qk.highScore > 0 ? String(qk.highScore) : "—", W - 18, b2Y + 35);
 
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Piani Scalati Record:", 18, b2Y + 54);
       ctx.textAlign = "right";
       ctx.fillStyle = "#fff59d";
       ctx.fillText(qk.maxFloors > 0 ? (qk.maxFloors + " Piani") : "—", W - 18, b2Y + 54);
 
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#cfd8dc";
       ctx.fillText("Combo Massima:", 18, b2Y + 73);
       ctx.textAlign = "right";
@@ -1996,13 +2014,16 @@ class StateMachine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "rgba(255, 213, 74, 0.2)";
-      ctx.fillRect(20, H - 36, W - 40, 24);
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(20, H - 36, W - 40, 24, 6);
+      else ctx.rect(20, H - 36, W - 40, 24);
+      ctx.fill();
       ctx.strokeStyle = "#ffd54a";
       ctx.lineWidth = 1;
-      ctx.strokeRect(20, H - 36, W - 40, 24);
+      ctx.stroke();
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("🔙 TORNA AL MENU", W / 2, H - 24);
     }
 
@@ -2015,15 +2036,18 @@ class StateMachine {
         ctx.fillRect(0, 0, W, H);
       }
 
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("COME TI SENTI OGGI", W / 2, 38);
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("ANNINA? ✨", W / 2, 54);
 
       ctx.fillStyle = "#b0bec5";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Scegli la tua colonna sonora:", W / 2, 75);
 
       const items = [
@@ -2042,13 +2066,17 @@ class StateMachine {
 
         if (sel) {
           ctx.fillStyle = "rgba(255, 128, 171, 0.25)";
-          ctx.fillRect(12, y0 + i * 26 - 11, W - 24, 22);
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(12, y0 + i * 26 - 11, W - 24, 22, 6);
+          else ctx.rect(12, y0 + i * 26 - 11, W - 24, 22);
+          ctx.fill();
           ctx.strokeStyle = "#ff80ab";
           ctx.lineWidth = 1.5;
-          ctx.strokeRect(12, y0 + i * 26 - 11, W - 24, 22);
+          ctx.stroke();
         }
 
-        ctx.font = sel ? "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace" : "11px 'Courier New', Courier, Menlo, Monaco, monospace";
+        ctx.font = sel ? "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+                       : "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         ctx.fillStyle = isActive ? "#aed581" : (sel ? "#ffd54a" : "#cfd8dc");
         
         let text = `${item.icon} ${item.label}`;
@@ -2056,7 +2084,7 @@ class StateMachine {
         ctx.fillText(text, W / 2, y0 + i * 26);
       }
 
-      ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#90a4ae";
       ctx.fillText("Inserisci i tuoi brani in assets/audio/", W / 2, H - 24);
       ctx.fillText("baddie.mp3 / cattiva.mp3 / espanol.mp3", W / 2, H - 12);
@@ -2064,53 +2092,61 @@ class StateMachine {
 
     // DIALOG — popup con dedica romantica per Annina
     if (this.current === S.DIALOG) {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.78)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.82)";
       ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = "#212730";
-      ctx.fillRect(15, 35, W - 30, H - 70);
+      ctx.fillStyle = "#1e242e";
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(15, 32, W - 30, H - 64, 12);
+      else ctx.rect(15, 32, W - 30, H - 64);
+      ctx.fill();
       ctx.strokeStyle = "#ff4081";
       ctx.lineWidth = 2;
-      ctx.strokeRect(15, 35, W - 30, H - 70);
+      ctx.stroke();
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 13px 'Courier New', Courier, Menlo, Monaco, monospace";
-      ctx.fillText("Per la mia Annina ❤️", W / 2, 58);
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText("❤️ Per la mia Annina ❤️", W / 2, 54);
 
       ctx.fillStyle = "#eceff1";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       const lines = [
         "Questo gioco è fatto",
         "apposta per te,",
         "ricordando i tuoi pomeriggi",
-        "da bambina sul Nokia!",
+        "da bambina sul Nokia! 📱",
         "",
         "Insieme a te e al nostro",
         "fedele Cacao 🐕",
         "costruiamo tra le Alpi,",
-        "Palma e sotto i Portici!",
+        "Palma e sotto i Portici! 🏛️",
         "",
-        "Premi [AZIONE] o tocca",
-        "lo schermo per tornare."
+        "Tocca lo schermo",
+        "per continuare ✨"
       ];
       for (let l = 0; l < lines.length; l++) {
-        ctx.fillText(lines[l], W / 2, 85 + l * 14);
+        ctx.fillText(lines[l], W / 2, 80 + l * 14);
       }
     }
 
     // CLIMB_DONE — scalata completata
     if (this.current === S.CLIMB_DONE) {
-      ctx.font = "12px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillStyle = "#ffd54a";
       ctx.fillText("✨ Scalata Completata! ✨", W / 2, H / 2 + 16);
-      ctx.font = "11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       if (g.mode === MODE.EMPIRE) {
         const q = g.pieceQuality();
         ctx.fillStyle = CONFIG.HOUSE_QUALITY_COLORS[q];
         ctx.fillText("Pezzo " + CONFIG.HOUSE_QUALITY_NAMES[q] +
                      " (x" + CONFIG.HOUSE_QUALITY_MULT[q] + ")",
                      W / 2, H / 2 + 34);
-        ctx.fillStyle = "#cfd8dc"; ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+        ctx.fillStyle = "#cfd8dc"; ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         ctx.fillText(g.house.nextDef ? "In consegna: " + g.house.nextDef.label : "",
                      W / 2, H / 2 + 50);
       }
@@ -2121,17 +2157,20 @@ class StateMachine {
       ctx.fillStyle = "rgba(10, 14, 22, 0.88)";
       ctx.fillRect(0, 0, W, H);
 
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
       let y = 50;
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 14px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("🎉 VITTORIA! 🎉", W / 2, y); y += 18;
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "italic bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "italic 700 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Casetta Completata!", W / 2, y); y += 26;
 
       if (g.mode === MODE.EMPIRE) {
         ctx.fillStyle = RANK_COLORS[g.rank] || "#aed581";
-        ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+        ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         for (const ln of wrapText(ctx, RANK_NAMES[g.rank] || "Grande Architetto!", W - 30)) {
           ctx.fillText(ln, W / 2, y); y += 13;
         }
@@ -2139,11 +2178,11 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Punteggio Totale: " + g.scoreDisplayed, W / 2, y); y += 20;
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Combo Massima: x" + g.comboMax, W / 2, y); y += 15;
       ctx.fillText("Tempo Bonus: +" + g.timeBonus(), W / 2, y); y += 15;
 
@@ -2154,7 +2193,7 @@ class StateMachine {
       }
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Tocca o premi Spazio per il Menu", W / 2, H - 24);
     }
 
@@ -2163,25 +2202,28 @@ class StateMachine {
       ctx.fillStyle = "rgba(20, 8, 8, 0.88)";
       ctx.fillRect(0, 0, W, H);
 
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
       let y = 60;
       ctx.fillStyle = "#ef5350";
-      ctx.font = "bold 15px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("💔 PARTITA TERMINATA 💔", W / 2, y); y += 22;
 
       ctx.fillStyle = "#cfd8dc";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Il blocco è caduto troppe volte!", W / 2, y); y += 28;
 
       ctx.fillStyle = "#ffd54a";
-      ctx.font = "bold 13px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Punteggio Finale: " + g.scoreDisplayed, W / 2, y); y += 20;
 
       ctx.fillStyle = "#80cbc4";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Miglior Record: " + g.highScore, W / 2, y); y += 30;
 
       ctx.fillStyle = "#ff80ab";
-      ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("Tocca o premi Spazio per Riprovare", W / 2, H - 24);
     }
 
@@ -2193,7 +2235,7 @@ class StateMachine {
         // HUD di debug (se attivato per sviluppo)
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
+        ctx.font = "9px monospace";
         ctx.fillStyle = "rgba(0,0,0,0.55)";
         const hudH = (this.current === S.SWING) ? 91
                    : (this.current === S.FLY || this.current === S.LAND) ? 91 : 60;
@@ -2232,11 +2274,11 @@ class StateMachine {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.font = "bold 11px 'Courier New', Courier, Menlo, Monaco, monospace";
+    ctx.font = "800 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.fillStyle = g.banner.color || "#ffd54a";
     ctx.fillText(g.banner.title, W / 2, by + 11);
 
-    ctx.font = "9px 'Courier New', Courier, Menlo, Monaco, monospace";
+    ctx.font = "600 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.fillStyle = "#e0e0e0";
     ctx.fillText(g.banner.subtitle, W / 2, by + 24);
 
@@ -2258,13 +2300,13 @@ class StateMachine {
     // Punteggio, a sinistra.
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffd54a";
-    ctx.font = "bold 12px 'Courier New', Courier, Menlo, Monaco, monospace";
+    ctx.font = "800 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.fillText(String(g.scoreDisplayed), 6, 11);
 
     // Combo attiva
     if (g.combo > 1 && g.comboTimer > 0) {
       ctx.fillStyle = "#aed581";
-      ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText("x" + g.combo, 6 + ctx.measureText(String(g.scoreDisplayed)).width + 6, 11);
     }
 
@@ -2289,7 +2331,7 @@ class StateMachine {
       }
 
       ctx.save();
-      ctx.font = "bold 9px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "800 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       const tw = ctx.measureText(label).width;
       const pw = tw + 8;
       const px = Math.round((W - pw) / 2);
@@ -2310,22 +2352,20 @@ class StateMachine {
       ctx.restore();
     }
 
-    // Pulsante Touch PAUSA ⏸️ in alto a destra
-    const btnX = W - 22, btnY = 3, btnW = 18, btnH = 16;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    // Pulsante Touch PAUSA in alto a destra (con barre vettoriali centrate)
+    const btnX = W - 24, btnY = 3, btnW = 20, btnH = 16;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
     ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(btnX, btnY, btnW, btnH, 3);
+    if (ctx.roundRect) ctx.roundRect(btnX, btnY, btnW, btnH, 4);
     else ctx.rect(btnX, btnY, btnW, btnH);
     ctx.fill();
     ctx.strokeStyle = "rgba(255, 213, 74, 0.6)";
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 10px 'Courier New', Courier, Menlo, Monaco, monospace";
     ctx.fillStyle = "#ffd54a";
-    ctx.fillText("⏸️", btnX + btnW / 2, btnY + btnH / 2);
+    ctx.fillRect(btnX + 5, btnY + 4, 3, 8);
+    ctx.fillRect(btnX + 12, btnY + 4, 3, 8);
 
     // Tempo rimanente della scalata (Empire mode)
     if (g.timeLimitMs > 0) {
@@ -2333,7 +2373,7 @@ class StateMachine {
       const s = Math.ceil(left / 1000);
       ctx.textAlign = "right";
       ctx.fillStyle = left > 0 ? "#cfd8dc" : "#ef5350";
-      ctx.font = "10px 'Courier New', Courier, Menlo, Monaco, monospace";
+      ctx.font = "600 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
       ctx.fillText(Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"), btnX - 6, 11);
     }
 
