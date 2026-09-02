@@ -13,7 +13,7 @@ console.log("✓ Sintassi JavaScript corretta!");
 // Verifica presenza di tutti gli asset personalizzati richiesti
 const requiredAssets = [
   "bg_montagna.jpg", "bg_palma.jpg", "bg_bologna.jpg",
-  "anna_wait.png", "anna_hold.png", "anna_catch.png", "anna_cheer.png",
+  "anna_wait.png", "anna_hold.png", "anna_catch.png", "anna_cheer.png", "anna_cacao_menu.png",
   "anna_cart_0.png", "anna_cart_1.png", "anna_cart_2.png", "anna_cart_3.png",
   "cacao_walk_0.png", "cacao_walk_1.png", "cacao_walk_2.png", "cacao_walk_3.png",
   "cacao_wait_0.png", "cacao_wait_1.png", "cacao_wait_2.png", "cacao_wait_3.png",

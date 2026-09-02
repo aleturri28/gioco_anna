@@ -790,6 +790,7 @@ const Assets = {
     annaHold: null,
     annaCatch: null,
     annaCheer: null,
+    annaCacaoMenu: null,
     annaCart: [],
     cacaoWalk: [],
     cacaoWait: [],
@@ -819,6 +820,7 @@ const Assets = {
       loadCustomImg("assets/custom/anna_hold.png").then(im => { this.custom.annaHold = im; }),
       loadCustomImg("assets/custom/anna_catch.png").then(im => { this.custom.annaCatch = im; }),
       loadCustomImg("assets/custom/anna_cheer.png").then(im => { this.custom.annaCheer = im; }),
+      loadCustomImg("assets/custom/anna_cacao_menu.png").then(im => { this.custom.annaCacaoMenu = im; }),
       ...[0,1,2,3].map(i => loadCustomImg(`assets/custom/anna_cart_${i}.png`).then(im => { this.custom.annaCart[i] = im; })),
       ...[0,1,2,3].map(i => loadCustomImg(`assets/custom/cacao_walk_${i}.png`).then(im => { this.custom.cacaoWalk[i] = im; })),
       ...[0,1,2,3].map(i => loadCustomImg(`assets/custom/cacao_wait_${i}.png`).then(im => { this.custom.cacaoWait[i] = im; })),
@@ -1920,36 +1922,21 @@ class StateMachine {
       ctx.fillStyle = "#80cbc4";
       ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * rowStep + 10);
 
-      // Personaggi Pixel Art di Anna e Cacao poggiati sul fondo
-      const fAnim = Math.floor(Date.now() / 200) % 4;
-      const imCacao = (Assets.custom.cacaoSit && Assets.custom.cacaoSit[fAnim]) ||
-                      (Assets.custom.cacaoWait && Assets.custom.cacaoWait[fAnim]) ||
-                      (Assets.custom.cacaoSit && Assets.custom.cacaoSit[0]);
-      const imAnna = Assets.custom.annaWait || Assets.custom.annaCheer;
+      // Personaggio Pixel Art di Anna e Cacao insieme sulla panchina poggiati sul fondo
+      const imDuo = Assets.custom.annaCacaoMenu;
+      if (imDuo && imDuo.complete && imDuo.naturalWidth > 0) {
+        const duoH = 92;
+        const duoW = Math.round(duoH * (imDuo.naturalWidth / imDuo.naturalHeight));
+        const duoX = Math.round((W - duoW) / 2);
+        const duoY = H - duoH;
 
-      const groundY = H;
-      const cacaoW = 44, cacaoH = 32;
-      const cacaoX = 58, cacaoY = groundY - cacaoH;
+        // Ombra morbida sul pavimento
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.beginPath();
+        ctx.ellipse(W / 2, H - 2, Math.round(duoW * 0.48), 4, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-      const annaW = 34, annaH = 44;
-      const annaX = 138, annaY = groundY - annaH;
-
-      // Ombre morbide sul pavimento
-      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-      ctx.beginPath();
-      ctx.ellipse(cacaoX + cacaoW / 2, groundY - 2, cacaoW * 0.42, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.ellipse(annaX + annaW / 2, groundY - 2, annaW * 0.38, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Disegno Cacao e Anna
-      if (imCacao && imCacao.complete && imCacao.naturalWidth > 0) {
-        ctx.drawImage(imCacao, cacaoX, cacaoY, cacaoW, cacaoH);
-      }
-      if (imAnna && imAnna.complete && imAnna.naturalWidth > 0) {
-        ctx.drawImage(imAnna, annaX, annaY, annaW, annaH);
+        ctx.drawImage(imDuo, duoX, duoY, duoW, duoH);
       }
     }
 
