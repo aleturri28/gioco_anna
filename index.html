@@ -1922,18 +1922,22 @@ class StateMachine {
       ctx.fillStyle = "#80cbc4";
       ctx.fillText("🏆 Record di Annina: " + g.highScore, W / 2, y0 + g.menuItems.length * rowStep + 10);
 
-      // Personaggio Pixel Art di Anna e Cacao insieme sulla panchina poggiati sul fondo
+      // Personaggio Pixel Art di Anna e Cacao fedeli insieme poggiati sul fondo
       const imDuo = Assets.custom.annaCacaoMenu;
       if (imDuo && imDuo.complete && imDuo.naturalWidth > 0) {
-        const duoH = 92;
+        const duoH = 88;
         const duoW = Math.round(duoH * (imDuo.naturalWidth / imDuo.naturalHeight));
         const duoX = Math.round((W - duoW) / 2);
         const duoY = H - duoH;
 
         // Ombra morbida sul pavimento
-        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.40)";
         ctx.beginPath();
-        ctx.ellipse(W / 2, H - 2, Math.round(duoW * 0.48), 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(duoX + Math.round(duoW * 0.32), H - 2, Math.round(duoW * 0.28), 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(duoX + Math.round(duoW * 0.74), H - 2, Math.round(duoW * 0.22), 4, 0, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.drawImage(imDuo, duoX, duoY, duoW, duoH);
